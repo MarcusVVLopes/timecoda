@@ -1,0 +1,39 @@
+name: Feature proposal
+description: Propose a new function, model engine, method or other feature.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: A feature should be agreed in this issue before any code is written.
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What the package should do
+      description: The new behaviour, in a few sentences.
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Example call
+      description: How you would write the call, and what it should return.
+      render: r
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: Supporting references
+      description: If the feature implements a new method, the papers that describe it, with their DOIs.
+    validations:
+      required: false
+  - type: dropdown
+    id: pull-request
+    attributes:
+      label: Would you write the pull request?
+      options:
+        - "Yes"
+        - "Yes, with help"
+        - "No"
+    validations:
+      required: true

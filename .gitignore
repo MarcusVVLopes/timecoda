@@ -1,0 +1,16 @@
+.Rproj.user
+.Rhistory
+.RData
+.httr-oauth
+.DS_Store
+.quarto
+Rplots.pdf
+tests/testthat/Rplots.pdf
+/doc/
+/Meta/
+docs
+library/
+.posit/
+.vscode/
+*.Rcheck/
+timecoda_*.tar.gz

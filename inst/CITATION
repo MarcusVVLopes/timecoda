@@ -1,0 +1,15 @@
+bibentry(
+  bibtype = "Manual",
+  title = "timecoda: Compositional Data Analysis for Time-Use Behaviour Research",
+  author = c(
+    person(c("Marcus", "V.", "V."), "Lopes",
+           comment = c(ORCID = "0000-0002-7968-5211")),
+    person(c("Willen", "R."), "Tozetto",
+           comment = c(ORCID = "0000-0001-8856-1678")),
+    person("Ricardo", "de Camargo"),
+    person("Kai", "Zhang")
+  ),
+  year = "2026",
+  note = paste("R package version", meta$Version),
+  url = "https://github.com/MarcusVVLopes/timecoda"
+)

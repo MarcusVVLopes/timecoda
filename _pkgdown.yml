@@ -1,0 +1,128 @@
+url: https://marcusvvlopes.github.io/timecoda/
+
+template:
+  bootstrap: 5
+  math-rendering: katex
+  bslib:
+    primary: "#1b6e73"
+
+development:
+  mode: auto
+
+home:
+  sidebar:
+    structure: [links, license, community, citation, authors]
+
+authors:
+  sidebar:
+    roles: [aut, cre, ctb]
+
+news:
+  cran_dates: false
+
+navbar:
+  structure:
+    left: [intro, articles, reference, news]
+    right: [search, github]
+  components:
+    intro:
+      text: Get started
+      href: articles/timecoda.html
+    news:
+      text: News
+      href: news/index.html
+
+articles:
+- title: Get started
+  navbar: ~
+  contents:
+  - timecoda
+
+- title: Describe a composition
+  navbar: Describe a composition
+  contents:
+  - composition-variable
+
+- title: Composition as predictor
+  navbar: Composition as predictor
+  contents:
+  - composition-predictor
+  - predicting-reallocations
+  - optimal-composition
+
+- title: More model engines
+  navbar: More model engines
+  contents:
+  - advanced-models
+
+reference:
+- title: Declare & describe composition
+  desc: >
+    Build the `compD` object, with validation, zero imputation and optional
+    compositional outlier flagging, and describe it with tidy tables and plots.
+  contents:
+  - declare_composition
+  - comp_impute
+  - comp_outliers
+  - print.compD
+  - summary.compD
+  - print.summary_compD
+  - plot.compD
+  - pub_ready
+
+- title: Composition as predictor
+  desc: >
+    Model the composition as an independent variable across eleven model
+    engines, with a publication effect table and a predicted-outcome plot.
+  contents:
+  - comp_iv
+  - summary.comp_iv
+  - print.summary_comp_iv
+  - plot.comp_iv
+  - print.timecoda_fit
+  - ilr
+
+- title: Reallocation & prediction
+  desc: >
+    Estimate the effects of time reallocations from a `comp_iv()` fit, plot
+    them, tabulate them for publication, and search the fit for an optimal
+    composition.
+  contents:
+  - predict_realloc
+  - summary.realloc
+  - print.summary_realloc
+  - optimal_composition
+  - plot_realloc
+
+- title: Visualization
+  desc: Standalone ternary and variation-matrix plots.
+  contents:
+  - plot_ternary
+  - plot_variation
+
+- title: Diagnostics
+  desc: >
+    Goodness-of-fit and residual diagnostics matched to the fitted model
+    class.
+  contents:
+  - fit_check
+
+- title: Composition helpers
+  desc: >
+    Validation, the ILR transform and its inverse, and other composition
+    utilities.
+  contents:
+  - check_composition
+  - ilr_transform
+  - ilr_backtransform
+  - geom_mean_comp
+  - variation_matrix
+
+- title: Data
+  desc: Example dataset shipped with the package.
+  contents:
+  - timeuse
+
+- title: Package overview
+  contents:
+  - timecoda-package

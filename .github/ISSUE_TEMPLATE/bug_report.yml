@@ -1,0 +1,41 @@
+name: Bug report
+description: Something gives a wrong result, an error or a warning you did not expect.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you saw, including the full error or warning text.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Code that reproduces it
+      description: A short script that runs on the bundled `timeuse` data or on simulated data.
+      render: r
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: The value or behaviour you expected, and where it comes from (a paper, another package or a hand calculation).
+    validations:
+      required: true
+  - type: textarea
+    id: session-info
+    attributes:
+      label: Session information
+      description: The output of `sessionInfo()`.
+      render: r
+    validations:
+      required: true
+  - type: checkboxes
+    id: no-study-data
+    attributes:
+      label: Study data
+      options:
+        - label: This report contains no study data or personal information.
+          required: true

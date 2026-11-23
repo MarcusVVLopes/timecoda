@@ -1,0 +1,534 @@
+---
+title: "Advanced model engines and the formula interface"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Advanced model engines and the formula interface}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+# R prints a note when two loaded packages register the same S3 method, as
+# packages loaded with robCompositions do. The note is switched off here.
+Sys.setenv("_R_S3_METHOD_REGISTRATION_NOTE_OVERWRITES_" = "false")
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  out.width = "100%",
+  error = FALSE
+)
+```
+
+For the model engines of `comp_iv()` beyond `"lm"` and `"glm"`, the formula
+interface and the diagnostics of each engine, see the four parts below.
+
+```{r load, message = FALSE}
+library(timecoda)
+```
+
+# The example data
+
+To model an outcome as a function of a time-use composition, which is the
+independent variable, use `comp_iv()`. For its linear and generalized linear
+models, see `vignette("composition-predictor", package = "timecoda")`.
+
+The examples use the bundled `timeuse` data. For a description of the data, see
+`vignette("composition-variable", package = "timecoda")`. The data hold the
+body-mass-index z-score (`zbmi`), the obesity indicator (`obesity`) and sex
+(`sex`) used in the other vignettes, together with each person's school
+(`school`, ten schools) and an ordered academic-achievement band (`grade`, with
+the levels `below`, `expected` and `above`). They also hold the follow-up time
+in months to the onset of obesity or censoring (`time`), with its event
+indicator (`event`, 1 for onset).
+
+```{r declare}
+labs <- c(
+  MVPA = "Moderate-to-vigorous PA",
+  LPA  = "Light PA",
+  SB   = "Sedentary behaviour",
+  SPT  = "Sleep"
+)
+
+cd <- declare_composition(
+  data    = timeuse,
+  parts   = c("MVPA", "LPA", "SB", "SPT"),
+  closure = 1440,
+  units   = "min/day",
+  labels  = labs
+)
+```
+
+# Part 1. One builder, eleven engines
+
+Every engine is fitted by `comp_iv()` through the same procedure. The engines
+differ in the effect measure reported by `summary()`, in whether `family` or
+`random` must be given, and in whether a prediction on the scale of the outcome
+exists. You must give `family` for `"glm"` and `"glmer"`, and the other engines
+reject it. `random` is required for the clustered engines (`"coxme"`, `"lmer"`,
+`"glmer"`, `"clmm"` and `"rlmer"`), optional for `"mblogit"` and rejected by the
+rest.
+
+Reallocation estimates are contrasts. For details, see
+`vignette("predicting-reallocations", package = "timecoda")`.
+
+| `model` | Backend | Use case | Effect measure |
+|---|---|---|---|
+| `"lm"` | `stats::lm()` | A continuous outcome with independent observations | mean difference |
+| `"glm"` | `stats::glm()` | A binary, count or continuous outcome with a GLM family (e.g., logistic or Poisson regression) and independent observations | set by the link: odds ratio, rate, risk or mean ratio, or mean difference |
+| `"cox"` | `survival::coxph()` | A time-to-event outcome with independent observations | hazard ratio |
+| `"coxme"` | `coxme::coxme()` | A time-to-event outcome with random effects for clustered or repeated data | hazard ratio |
+| `"lmer"` | `lme4::lmer()` | A continuous outcome with random effects for clustered or repeated data | mean difference |
+| `"glmer"` | `lme4::glmer()` | A binary, count or continuous outcome with a GLM family and random effects for clustered or repeated data | set by the link, as for `"glm"` |
+| `"clm"` | `ordinal::clm()` | An ordered-factor outcome (e.g., a graded scale) | cumulative odds ratio |
+| `"clmm"` | `ordinal::clmm()` | An ordered-factor outcome with random effects for clustered or repeated data | cumulative odds ratio |
+| `"mblogit"` | `mclogit::mblogit()` | An unordered-factor outcome with three or more categories, with optional random effects | relative-risk ratio, one per non-reference category |
+| `"lmrob"` | `robustbase::lmrob()` | A continuous outcome with outlying observations, down-weighted by MM-estimation | mean difference |
+| `"rlmer"` | `robustlmm::rlmer()` | A continuous outcome with outlying observations and random effects for clustered or repeated data | mean difference |
+
+Five engines (`"cox"`, `"coxme"`, `"clm"`, `"clmm"` and `"mblogit"`) offer no
+single scale on which to predict the outcome. On these fits,
+`predict_realloc()` accepts only `type = "relative"`, its default, and `plot()`
+draws only the relative surface. To draw one outcome level of a multinomial
+fit, give that level to `plot()` as `category`.
+
+The backends in the coxme, ordinal, mclogit, robustbase and robustlmm packages
+are suggested packages, and `comp_iv()` checks for them when it is called. An
+example that uses one of them runs only when that package is installed.
+
+# Part 2. The engines in turn
+
+For each family of engines, only the differences from the linear and logistic
+summaries of `vignette("composition-predictor", package = "timecoda")` are
+described.
+
+## Survival outcomes: `"cox"` and `"coxme"`
+
+```{r fit-cox}
+fit_cox <- comp_iv(comp = cd, model = "cox", time = "time", event = "event",
+                   covariates = "sex")
+summary(object = fit_cox)
+```
+
+The effects are hazard ratios, and a reallocation on a Cox fit is a hazard
+ratio as well. The report has no convergence line, because `comp_iv()` does not
+probe Cox fits for convergence.
+
+```{r realloc-cox}
+predict_realloc(object = fit_cox, from = "SB", to = "MVPA", delta = c(10, 30))
+```
+
+We observed that moving 10 minutes from sedentary behaviour to
+moderate-to-vigorous activity was associated with a hazard of obesity onset
+0.856 times that at the reference composition.
+
+`"coxme"` extends the Cox model with random effects. To give each school a
+random intercept (the term `(1 | school)`), set `random = "school"`.
+
+```{r fit-coxme, eval = requireNamespace("coxme", quietly = TRUE)}
+fit_coxme <- comp_iv(comp = cd, model = "coxme", time = "time",
+                     event = "event", random = "school")
+summary(object = fit_coxme)
+```
+
+One line is added to the summary, the median hazard ratio for school, which is
+computed from the school variance `v` as `exp(sqrt(2 * v) * qnorm(0.75))`
+(Austin et al., 2017). It is the median hazard ratio between two people with
+identical covariates drawn from different schools, taken as the person at
+higher risk over the other, and it is therefore never below 1. A value of 1
+would mean no variation in hazard between schools.
+
+## Multilevel models: `"lmer"` and `"glmer"`
+
+```{r fit-lmer, eval = requireNamespace("pbkrtest", quietly = TRUE)}
+fit_lmer <- comp_iv(comp = cd, outcome = "zbmi", model = "lmer",
+                    random = "school")
+summary(object = fit_lmer)
+```
+
+We read the intraclass correlation for school, 0.264, as the share of the total
+variance that lies between schools. With several grouping terms (e.g.,
+`random = c("region", "school")`), one such share is reported per term.
+
+```{r realloc-lmer, eval = requireNamespace("pbkrtest", quietly = TRUE)}
+predict_realloc(object = fit_lmer, from = "SB", to = "MVPA", delta = 10)
+```
+
+The `df` column is computed with the Kenward-Roger approximation (Kenward &
+Roger, 1997), which `emmeans` applies through the pbkrtest package when that
+package is installed. The same method is used for the per-part rows of the
+summary. For the alternatives, see the help page `?comp_iv`.
+
+```{r fit-glmer}
+fit_glmer <- comp_iv(comp = cd, outcome = "obesity", model = "glmer",
+                     family = "binomial", random = "school")
+summary(object = fit_glmer)
+```
+
+The between-school line is now a latent intraclass correlation. It is the same
+share, computed on the latent scale of the logistic model with `pi^2 / 3` in
+place of the residual variance (Goldstein et al., 2002). With a value of 0.001,
+almost none of the variation in the odds of obesity lies between schools.
+
+## Ordinal outcomes: `"clm"` and `"clmm"`
+
+To fit a cumulative-link model to an ordered factor, use `"clm"`. Here the
+factor is the three grade bands (`below`, `expected` and `above`, in that
+order).
+
+```{r fit-clm, eval = requireNamespace("ordinal", quietly = TRUE)}
+fit_clm <- comp_iv(comp = cd, outcome = "grade", model = "clm")
+summary(object = fit_clm)
+```
+
+With the parameterization of `ordinal::clm()` (Christensen, 2026), we read an
+odds ratio above 1 as higher odds of a higher grade band (i.e., of being at or
+above any given cut-point).
+
+```{r fit-clmm, eval = requireNamespace("ordinal", quietly = TRUE)}
+fit_clmm <- comp_iv(comp = cd, outcome = "grade", model = "clmm",
+                    random = "school")
+summary(object = fit_clmm)
+```
+
+As for `"glmer"`, the latent intraclass correlation for school is computed with
+`pi^2 / 3` in place of the residual variance.
+
+## Unordered categories: `"mblogit"`
+
+`comp_iv()` stops with an error when an ordered `grade` is given to this
+engine.
+
+To fit `"mblogit"`, add an unordered copy of `grade` to the data, with the same
+levels in the same order, and declare the composition again from it.
+
+```{r fit-mblogit, eval = requireNamespace("mclogit", quietly = TRUE)}
+tu <- timeuse
+tu$grade_cat <- factor(as.character(tu$grade), levels = levels(tu$grade))
+cd_cat <- declare_composition(data = tu, parts = c("MVPA", "LPA", "SB", "SPT"),
+                              closure = 1440, units = "min/day",
+                              labels = labs)
+
+fit_mb <- comp_iv(comp = cd_cat, outcome = "grade_cat", model = "mblogit")
+summary(object = fit_mb)
+```
+
+`below`, the first level, is the reference category. Each effect is a
+relative-risk ratio comparing one of the other two categories with the
+reference, and the new `response_level` column names the category. The omnibus
+test has 6 degrees of freedom, which are three coordinates for each
+non-reference category. On this fit, a reallocation also gives one row per
+non-reference category.
+
+```{r realloc-mblogit, eval = requireNamespace("mclogit", quietly = TRUE)}
+predict_realloc(object = fit_mb, from = "SB", to = "MVPA", delta = 10)
+```
+
+To fit a clustered model with `"mblogit"`, add `random`. `random = "school"`
+adds a random intercept for each school, and a bar term such as
+`random = "(ilr1 | school)"` adds a random slope on a coordinate. For details,
+see the help page `?comp_iv`.
+
+## Robust linear models: `"lmrob"` and `"rlmer"`
+
+To fit a linear model by MM-estimation (Yohai, 1987), use `"lmrob"`.
+
+```{r fit-lmrob, eval = requireNamespace("robustbase", quietly = TRUE)}
+fit_lmrob <- comp_iv(comp = cd, outcome = "zbmi", model = "lmrob")
+summary(object = fit_lmrob)
+```
+
+To fit the robust linear mixed model (Koller, 2016), use `"rlmer"`.
+
+```{r fit-rlmer, eval = requireNamespace("robustlmm", quietly = TRUE)}
+fit_rlmer <- comp_iv(comp = cd, outcome = "zbmi", model = "rlmer",
+                     random = "school")
+summary(object = fit_rlmer)
+```
+
+Because the robustlmm package reports no degrees of freedom, every standard
+error, interval and p-value of an `"rlmer"` fit is asymptotic, in the summary
+and in the reallocations alike. The `df` column of a reallocation is `Inf`,
+compared with 288 for the same reallocation on the `"lmer"` fit.
+
+```{r realloc-rlmer, eval = requireNamespace("robustlmm", quietly = TRUE)}
+predict_realloc(object = fit_rlmer, from = "SB", to = "MVPA", delta = 10)
+```
+
+# Part 3. The formula interface
+
+## The `ilr()` marker
+
+To specify the model as a formula, give `formula` in place of `outcome`,
+`covariates`, `random`, `time`, `event` and `moderator`. Within it, the marker
+`ilr()` stands for the whole composition. The discrete call
+`outcome = "zbmi", covariates = "sex"` can be written as the formula
+`zbmi ~ ilr() + sex`, and the printed fit shows the call with `ilr()` expanded.
+
+```{r formula-main}
+fit_main <- comp_iv(comp = cd, formula = zbmi ~ ilr() + sex, model = "lm")
+fit_main
+```
+
+Every other term is passed to the backend unchanged, so a formula can hold
+interactions, random terms and transformed variables. `ilr()` is expanded by two
+rules (`?ilr`).
+
+The first rule applies inside the formula operators `+`, `-`, `*`, `:`, `/`,
+`^`, `%in%`, `|` and `||` and inside parentheses. There, `ilr()` is replaced by
+the sum `(ilr1 + ... + ilr(D-1))`, and R's formula algebra applies to it. In an
+lme4-style engine, `(ilr() | school)` is a random slope on every coordinate.
+`ilr()^2` expands to the main effects and every pairwise product of the
+coordinates, with no squares.
+
+```{r formula-sum}
+fit_int <- comp_iv(comp = cd, formula = zbmi ~ ilr() * sex, model = "lm")
+fit_int
+```
+
+The second rule applies inside any other call, where `ilr()` is distributed.
+The call is repeated once per coordinate and the copies are added, and
+`I(ilr()^2)` becomes `(I(ilr1^2) + I(ilr2^2) + I(ilr3^2))`. Combining both
+rules, the formula `ilr()^2 + I(ilr()^2)` is the full quadratic in the
+composition, with main effects, pairwise products and squares.
+
+```{r formula-quadratic}
+fit_quad <- comp_iv(comp = cd, formula = zbmi ~ ilr()^2 + I(ilr()^2) + sex,
+                    model = "lm")
+fit_quad
+```
+
+The second rule distributes `poly(ilr(), 2)` and `splines::ns(ilr(), 3)` in the
+same way. `comp_iv()` warns that the estimates may be biased when the formula
+holds `ilr()` but no coordinate appears as a term of its own or as the first
+argument of `poly()`, `ns()` or `bs()`.
+
+## Moderation
+
+To test the interaction of one covariate with the composition, name that
+covariate with `moderator`. The fit is the model `zbmi ~ ilr() * sex` of
+`fit_int` with the moderation test added.
+
+```{r moderator}
+fit_mod <- comp_iv(comp = cd, outcome = "zbmi", model = "lm",
+                   moderator = "sex")
+summary(object = fit_mod)
+```
+
+The moderation line reports a joint Wald test of the null hypothesis that every
+composition-by-sex coefficient is zero (i.e., that the association between the
+composition and z-BMI does not differ between the sexes). For each part, the
+three new columns (`mod_statistic`, `mod_df` and `mod_p.value`) hold the test of
+the null hypothesis that the part's own interaction with sex is zero. For
+sleep, the test gives p = 0.0322, with no adjustment for the four tests.
+
+For reallocation estimates on a fit with a composition-by-covariate
+interaction, see `vignette("predicting-reallocations", package = "timecoda")`.
+
+For a factor `moderator`, `by` defaults to the moderator when neither `by` nor
+`at` names it. `fit_int`, the formula fit, is the same model, although a
+formula carries no default `by`. A reallocation on `fit_int` depends on sex, and
+`predict_realloc()` therefore stops with an error until you give a value for
+every covariate that interacts with the composition, through `at` or `by`.
+
+## Non-linear composition terms
+
+```{r quadratic-summary}
+summary(object = fit_quad)
+```
+
+The omnibus test now has 9 degrees of freedom, one for each coefficient that
+involves only the coordinates. The curvature line reports a joint Wald test of
+the null hypothesis that the coefficients of the squares and products are all
+zero (i.e., that the association between the composition and z-BMI has no
+curvature). Because a rotated fit with squares and products has no single
+`ilr1` coefficient, each per-part row is the slope of the linear predictor in
+`ilr1` at the reference composition, taken from `emmeans::emtrends()`.
+`predict_realloc()` reads the quadratic fit in the same way as a linear one.
+
+```{r quadratic-realloc}
+predict_realloc(object = fit_quad, from = "SB", to = "MVPA", delta = c(10, 30))
+```
+
+We observed that the mean z-BMI difference associated with moving 30 minutes is
+less than three times that for 10 minutes.
+
+`plot()` draws the fitted surface as one ternary panel for each group of three
+parts. For this figure on a logistic fit, see
+`vignette("composition-predictor", package = "timecoda")`.
+
+```{r quadratic-plot, fig.width = 7, fig.height = 5, fig.alt = "One of four ternary panels, one for each group of three parts, of the quadratic linear model's surface of the mean difference in z-BMI from the reference composition as tiles. Several dozen small hexagonal tiles form a patch inside the triangle, coloured from dark purple for the panel's lowest mean difference to yellow for its highest, with a black point at the reference composition; the rest of the triangle is blank grey, and a legend titled Mean difference gives the scale."}
+plot(x = fit_quad)
+```
+
+The full quadratic is the same model in every ILR basis, so its fit and
+reallocations do not depend on the order of the parts. A squares-only
+specification, `ilr() + I(ilr()^2)`, and `poly(ilr(), 2)` lack this invariance,
+and their fits depend on the order of the parts given to
+`declare_composition()`. For an example on `timeuse`, see the help page `?ilr`.
+
+## The total as a covariate
+
+The total of a composition of the waking behaviours alone (moderate-to-vigorous
+activity, light activity and sedentary behaviour) varies between people. To
+add this total to the model, set `include_total = TRUE`, which enters it as the
+covariate `t_total` of Coenders et al. (2017), `t = sqrt(D) * log(g)`, where
+`g` is the geometric mean of a person's parts on their original scale. The ILR
+coefficients then give the association between the outcome and the shares of
+waking time, at a constant waking time. The coefficient of `t_total` gives the
+difference in the outcome associated with a longer waking day, in which every
+waking behaviour is larger in the same proportion and sleep is shorter.
+
+The waking composition is declared from the same data with three parts.
+Declared with `closure = "mean"`, it is reported on the scale of the average
+waking time, and the row totals before closure, shown in its summary, are the
+waking times.
+
+```{r total-data}
+cd_wake <- declare_composition(
+  data    = timeuse,
+  parts   = c("MVPA", "LPA", "SB"),
+  closure = "mean",
+  units   = "min/day",
+  labels  = labs[c("MVPA", "LPA", "SB")]
+)
+summary(object = cd_wake, desc = FALSE, var_matrix = FALSE)
+```
+
+```{r total-fit}
+fit_tot <- comp_iv(comp = cd_wake, outcome = "zbmi", model = "lm",
+                   include_total = TRUE)
+summary(object = fit_tot)
+```
+
+The null hypothesis of the one-degree-of-freedom Wald test of `t_total` is that
+its coefficient is zero (i.e., that waking time and z-BMI are not associated at
+constant shares of waking time). At constant shares, a longer waking day, and so
+a shorter time asleep, is associated with a higher z-BMI in these data, as the
+positive coefficient shows.
+
+```{r total-realloc}
+predict_realloc(object = fit_tot, from = "SB", to = "MVPA", delta = 10)
+```
+
+In a reallocation, every composition is evaluated with `t_total` held at its
+reference value, the sample mean of `t_total`, and the estimate is therefore the
+difference associated with the move at a constant waking time. On the
+fixed-total `cd`, `include_total = TRUE` ends with an error.
+
+# Part 4. Diagnostics per engine
+
+The diagnostic backend used by `fit_check()` depends on the model class.
+
+## Models checked with DHARMa
+
+For `"lm"`, `"glm"`, `"lmer"` and `"glmer"` fits, `fit_check()` uses the DHARMa
+package (Hartig, 2026). For the simulated quantile residuals, see
+`vignette("composition-predictor", package = "timecoda")`. The rows reported for
+a `"glmer"` fit are those of a `"glm"` fit.
+
+## Cox models
+
+A `"cox"` fit is checked with `survival::cox.zph()`, a test of the
+proportional-hazards assumption based on the scaled Schoenfeld residuals
+(Grambsch & Therneau, 1994).
+
+```{r check-cox}
+fc_cox <- fit_check(object = fit_cox, plot = FALSE)
+fc_cox
+```
+
+In the global test, we found no evidence of a departure from proportional
+hazards (p = 0.906). To draw the Schoenfeld residuals of each term against
+time, set `plot = TRUE`.
+
+## Ordinal models
+
+A `"clm"` fit is checked with `ordinal::nominal_test()` (Christensen, 2026) and
+with the sure package (Greenwell et al., 2018), which provides surrogate
+residuals (Liu & Zhang, 2018).
+
+```{r check-clm, eval = requireNamespace("ordinal", quietly = TRUE) && requireNamespace("sure", quietly = TRUE)}
+fc_clm <- fit_check(object = fit_clm, plot = FALSE)
+fc_clm
+```
+
+In the proportional-odds tests, we found no evidence of a departure from
+proportional odds for any of the three coordinates (p-values of 0.262 and
+above). The surrogate residuals are random draws made under a fixed seed and
+therefore repeat from call to call. To draw them, set `plot = TRUE`.
+
+## Robust models
+
+`"lmrob"` and `"rlmer"` fits are checked through the robustness weights of their
+estimates.
+
+```{r check-lmrob, eval = requireNamespace("robustbase", quietly = TRUE)}
+fc_lmrob <- fit_check(object = fit_lmrob, plot = FALSE)
+fc_lmrob
+```
+
+In this fit, the downweighted share of 0.01 corresponds to three of the 300
+people, each weighted below 0.5. The rows reported for an `"rlmer"` fit are the
+same.
+
+## Engines with fit statistics only
+
+For `"clmm"`, `"mblogit"` and `"coxme"` fits, no residual diagnostic is run, and
+`fit_check()` reports the AIC and the log-likelihood with a note and draws
+nothing. A `"clmm"` fit therefore has no proportional-odds test, and a
+`"coxme"` fit has no proportional-hazards test. The log-likelihood of a
+`"coxme"` fit is the penalized one, and the AIC uses the fit's effective degrees
+of freedom.
+
+# References
+
+Austin, P. C., Wagner, P., & Merlo, J. (2017). The median hazard ratio: A
+useful measure of variance and general contextual effects in multilevel
+survival analysis. *Statistics in Medicine*, 36, 928-938.
+
+Christensen, R. H. B. (2026). *ordinal: Regression models for ordinal data*.
+R package version 2026.7-26.
+
+Coenders, G., Martín-Fernández, J. A., & Ferrer-Rosell, B. (2017). When
+relative and absolute information matter: Compositional predictor with a total
+in generalized linear models. *Statistical Modelling*, 17, 494-512.
+
+Goldstein, H., Browne, W., & Rasbash, J. (2002). Partitioning variation in
+multilevel models. *Understanding Statistics*, 1, 223-231.
+
+Grambsch, P. M., & Therneau, T. M. (1994). Proportional hazards tests and
+diagnostics based on weighted residuals. *Biometrika*, 81, 515-526.
+
+Greenwell, B. M., McCarthy, A. J., Boehmke, B. C., & Liu, D. (2018). Residuals
+and diagnostics for binary and ordinal regression models: An introduction to
+the sure package. *The R Journal*, 10(1).
+
+Hartig, F. (2026). *DHARMa: Residual diagnostics for hierarchical (multi-level
+/ mixed) regression models*. R package version 0.5.0.
+
+Kenward, M. G., & Roger, J. H. (1997). Small sample inference for fixed effects
+from restricted maximum likelihood. *Biometrics*, 53, 983-997.
+
+Koller, M. (2016). robustlmm: An R package for robust estimation of linear
+mixed-effects models. *Journal of Statistical Software*, 75(6), 1-24.
+
+Liu, D., & Zhang, H. (2018). Residuals and diagnostics for ordinal regression
+models: A surrogate approach. *Journal of the American Statistical
+Association*, 113, 845-854.
+
+Yohai, V. J. (1987). High breakdown-point and high efficiency robust estimates
+for regression. *The Annals of Statistics*, 15, 642-656.
+
+# See also
+
+- `vignette("composition-predictor", package = "timecoda")`: the linear and
+  logistic fits, the summary read line by line, and the fitted surface.
+- `vignette("predicting-reallocations", package = "timecoda")`: reallocation
+  estimates, their schemes and anchors, the publication table and the
+  reallocation figure.
+- `vignette("optimal-composition", package = "timecoda")`: the search for the
+  Goldilocks zone, the compositions with the best predicted outcome.
+- `vignette("timecoda", package = "timecoda")`: the whole workflow in one
+  analysis.

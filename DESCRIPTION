@@ -1,0 +1,79 @@
+Package: timecoda
+Title: Compositional Data Analysis for Time-Use Behaviour Research
+Version: 0.6.0
+Authors@R: 
+    c(
+      person("Marcus V. V.", "Lopes", , "mveber@cheo.on.ca",
+             role = c("aut", "cre", "cph"),
+             comment = c(ORCID = "0000-0002-7968-5211")),
+      person("Willen R.", "Tozetto", , "WTozetto@cheo.on.ca",
+             role = "aut",
+             comment = c(ORCID = "0000-0001-8856-1678")),
+      person("Ricardo", "de Camargo", , "ricardo.de.camargo@hotmail.com",
+             role = "aut"),
+      person("Kai", "Zhang", , "KZhang@cheo.on.ca",
+             role = "aut")
+    )
+Description: Tools for compositional data analysis (CoDA) of time-use behaviour,
+    such as the 24-hour composition of sleep, sedentary behaviour, light
+    physical activity and moderate-to-vigorous physical activity. A composition
+    is declared once and then modelled as a predictor of an outcome. It enters
+    each model through its isometric log-ratio (ILR) coordinates, computed with
+    'robCompositions'. The models include linear, generalized linear, Cox
+    proportional hazards, ordinal, multinomial and robust linear models, with
+    multilevel (mixed) variants. The package estimates the effect of
+    reallocating time between behaviours (compositional isotemporal
+    substitution) and plots compositions and reallocations. Predictions and
+    reallocation contrasts, with their confidence intervals, come from
+    'emmeans'.
+License: GPL (>= 3)
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+Depends:
+    R (>= 4.4.0)
+Imports:
+    cli,
+    compositions,
+    dplyr (>= 1.1.0),
+    emmeans,
+    ggplot2 (>= 3.4.0),
+    glue,
+    ggtern (>= 4.0.0),
+    lifecycle,
+    lme4,
+    patchwork,
+    purrr (>= 1.0.1),
+    reformulas,
+    rlang,
+    robCompositions,
+    scales,
+    survival,
+    tibble,
+    zCompositions
+Suggests:
+    car,
+    codaredistlm,
+    coxme,
+    DHARMa,
+    gt,
+    knitr,
+    lmerTest,
+    MASS,
+    mclogit,
+    nnet,
+    ordinal,
+    pbkrtest,
+    rmarkdown,
+    robustbase,
+    robustlmm,
+    sure (>= 0.3.0),
+    testthat (>= 3.0.0),
+    tinyplot,
+    withr
+Config/Needs/website: pkgdown
+Config/testthat/edition: 3
+VignetteBuilder: knitr
+URL: https://marcusvvlopes.github.io/timecoda/, https://github.com/MarcusVVLopes/timecoda
+BugReports: https://github.com/MarcusVVLopes/timecoda/issues
+Config/roxygen2/version: 8.1.1
