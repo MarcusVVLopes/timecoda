@@ -15,7 +15,7 @@
 ## Citation
 
 Source:
-[`inst/CITATION`](https://github.com/MarcusVVLopes/timecoda/blob/main/inst/CITATION)
+[`inst/CITATION`](https://github.com/MarcusVVLopes/timecoda/blob/v0.6.0/inst/CITATION)
 
 Lopes MVV, Tozetto WR, de Camargo R, Zhang K (2026). *timecoda:
 Compositional Data Analysis for Time-Use Behaviour Research*. R package

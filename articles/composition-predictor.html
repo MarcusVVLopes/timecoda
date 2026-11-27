@@ -70,7 +70,7 @@
       <h1>Modelling an outcome from a composition</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/MarcusVVLopes/timecoda/blob/main/vignettes/composition-predictor.Rmd" class="external-link"><code>vignettes/composition-predictor.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/MarcusVVLopes/timecoda/blob/v0.6.0/vignettes/composition-predictor.Rmd" class="external-link"><code>vignettes/composition-predictor.Rmd</code></a></small>
       <div class="d-none name"><code>composition-predictor.Rmd</code></div>
     </div>
 
@@ -402,9 +402,7 @@ reproducible without <code><a href="https://rdrr.io/r/base/Random.html" class="e
 pass it to <code><a href="../reference/fit_check.html">fit_check()</a></code> as its <code>seed</code>
 argument.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/fit_check.html">fit_check</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_ob</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L = G$L,</span></span>
-<span><span class="co">#&gt; : Fitting terminated with step failure - check results carefully</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/fit_check.html">fit_check</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_ob</span><span class="op">)</span></span></code></pre></div>
 <p><img src="composition-predictor_files/figure-html/check-ob-1.png" class="r-plt" alt="DHARMa diagnostic panels for the logistic fit: a QQ plot of the simulated quantile residuals against the uniform distribution, with the points along the diagonal and the three test results printed on it, and the residuals plotted against the rank-transformed model predictions, with quantile curves close to dashed lines at 0.25, 0.5 and 0.75." width="100%"></p>
 <pre><code><span><span class="co">#&gt; &lt;fit_check&gt; generalized linear model </span></span>
 <span><span class="co">#&gt;   Backend: dharma </span></span>

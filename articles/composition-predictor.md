@@ -295,8 +295,6 @@ as its `seed` argument.
 ``` r
 
 fit_check(object = fit_ob)
-#> Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L = G$L,
-#> : Fitting terminated with step failure - check results carefully
 ```
 
 ![DHARMa diagnostic panels for the logistic fit: a QQ plot of the
