@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 644" width="660" height="644" role="img" aria-labelledby="t d">
+<title id="t">The timecoda workflow</title>
+<desc id="d">A flowchart. A data frame with the parts and an outcome enters declare_composition(), which returns a compD object. The compD is described with summary(), plot() and pub_ready(). From the compD two modelling paths follow: modelling it as a predictor with comp_iv(), which leads to fit_check() for diagnostics, to predict_realloc() for reallocation estimates, themselves summarized with summary() and pub_ready() and drawn with plot_realloc(), and to optimal_composition() for a search of the fit for the best compositions; the second path, drawn in grey and dashed because it is planned and not yet implemented, would model the composition as the outcome with comp_dv(), described with summary() and plot(). A caption at the bottom reads: Grey: planned, not yet implemented.</desc>
+<defs>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M0 0 L10 5 L0 10 z" fill="#8c98a4"/>
+</marker>
+<marker id="ar-grey" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M0 0 L10 5 L0 10 z" fill="#9a9a9a"/>
+</marker>
+</defs>
+<rect width="660" height="644" fill="#ffffff"/>
+
+<rect x="140" y="16" width="380" height="44" rx="22" fill="#e6edf3" stroke="#5b7c99" stroke-width="1.2"/>
+<text x="330" y="43" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="13" font-weight="600" fill="#1f2933">Input: a data frame with the parts and an outcome</text>
+<line x1="330" y1="60" x2="330" y2="82" stroke="#8c98a4" stroke-width="1.4" marker-end="url(#ar)"/>
+
+<rect x="140" y="86" width="380" height="54" rx="6" fill="#f4f6f8" stroke="#9aa5b1" stroke-width="1.1"/>
+<text x="156" y="108" font-family="Helvetica,Arial,sans-serif" font-size="13" font-weight="600" fill="#1f2933">Declare: declare_composition()</text>
+<text x="156" y="127" font-family="Helvetica,Arial,sans-serif" font-size="11.5" fill="#5f6b76">validate, resolve the scale, impute zeroes, flag outliers, close</text>
+<line x1="330" y1="140" x2="330" y2="178" stroke="#8c98a4" stroke-width="1.4" marker-end="url(#ar)"/>
+
+<rect x="230" y="182" width="200" height="44" rx="22" fill="#e6edf3" stroke="#5b7c99" stroke-width="1.2"/>
+<text x="330" y="209" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="13" font-weight="600" fill="#1f2933">A compD object</text>
+
+<line x1="230" y1="204" x2="180" y2="204" stroke="#8c98a4" stroke-width="1.4" marker-end="url(#ar)"/>
+<rect x="16" y="171" width="160" height="66" rx="6" fill="#f4f6f8" stroke="#9aa5b1" stroke-width="1.1"/>
+<text x="28" y="193" font-family="Helvetica,Arial,sans-serif" font-size="13" font-weight="600" fill="#1f2933">Describe</text>
+<text x="28" y="211" font-family="Helvetica,Arial,sans-serif" font-size="11.5" fill="#5f6b76">summary(), plot(),</text>
+<text x="28" y="227" font-family="Helvetica,Arial,sans-serif" font-size="11.5" fill="#5f6b76">pub_ready()</text>
+
+<line x1="330" y1="226" x2="330" y2="248" stroke="#8c98a4" stroke-width="1.4"/>
+<line x1="247" y1="248" x2="330" y2="248" stroke="#8c98a4" stroke-width="1.4"/>
+<line x1="330" y1="248" x2="564" y2="248" stroke="#9a9a9a" stroke-width="1.4"/>
+<line x1="247" y1="248" x2="247" y2="270" stroke="#8c98a4" stroke-width="1.4" marker-end="url(#ar)"/>
+<line x1="564" y1="248" x2="564" y2="270" stroke="#9a9a9a" stroke-width="1.4" marker-end="url(#ar-grey)"/>
+
+<rect x="107" y="274" width="280" height="66" rx="6" fill="#f4f6f8" stroke="#9aa5b1" stroke-width="1.1"/>
+<text x="119" y="296" font-family="Helvetica,Arial,sans-serif" font-size="13" font-weight="600" fill="#1f2933">Model: comp_iv()</text>
+<text x="119" y="314" font-family="Helvetica,Arial,sans-serif" font-size="11.5" fill="#5f6b76">the composition as a predictor of an outcome</text>
+<text x="119" y="330" font-family="Helvetica,Arial,sans-serif" font-size="11.5" fill="#5f6b76">summary(), pub_ready()</text>
+
+<rect x="484" y="274" width="160" height="66" rx="6" fill="#ececec" stroke="#9a9a9a" stroke-width="1.1" stroke-dasharray="5 3"/>
+<text x="496" y="296" font-family="Helvetica,Arial,sans-serif" font-size="13" font-weight="600" fill="#595959">Model: comp_dv()</text>
+<text x="496" y="314" font-family="Helvetica,Arial,sans-serif" font-size="11.5" fill="#666666">the composition as</text>
+<text x="496" y="330" font-family="Helvetica,Arial,sans-serif" font-size="11.5" fill="#666666">the outcome</text>
+
+<line x1="247" y1="340" x2="247" y2="362" stroke="#8c98a4" stroke-width="1.4"/>
+<line x1="87" y1="362" x2="389" y2="362" stroke="#8c98a4" stroke-width="1.4"/>
+<line x1="87" y1="362" x2="87" y2="384" stroke="#8c98a4" stroke-width="1.4" marker-end="url(#ar)"/>
+<line x1="229" y1="362" x2="229" y2="384" stroke="#8c98a4" stroke-width="1.4" marker-end="url(#ar)"/>
+<line x1="389" y1="362" x2="389" y2="384" stroke="#8c98a4" stroke-width="1.4" marker-end="url(#ar)"/>
+
+<rect x="24" y="388" width="126" height="54" rx="6" fill="#f4f6f8" stroke="#9aa5b1" stroke-width="1.1"/>
+<text x="34" y="410" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="600" fill="#1f2933">fit_check()</text>
+<text x="34" y="429" font-family="Helvetica,Arial,sans-serif" font-size="11.5" fill="#5f6b76">residual diagnostics</text>
+
+<rect x="162" y="388" width="134" height="54" rx="6" fill="#f4f6f8" stroke="#9aa5b1" stroke-width="1.1"/>
+<text x="172" y="410" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="600" fill="#1f2933">predict_realloc()</text>
+<text x="172" y="429" font-family="Helvetica,Arial,sans-serif" font-size="11.5" fill="#5f6b76">reallocation effects</text>
+<line x1="229" y1="442" x2="229" y2="464" stroke="#8c98a4" stroke-width="1.4" marker-end="url(#ar)"/>
+
+<rect x="308" y="388" width="162" height="54" rx="6" fill="#f4f6f8" stroke="#9aa5b1" stroke-width="1.1"/>
+<text x="318" y="410" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="600" fill="#1f2933">optimal_composition()</text>
+<text x="318" y="429" font-family="Helvetica,Arial,sans-serif" font-size="11.5" fill="#5f6b76">the best compositions</text>
+
+<rect x="162" y="468" width="134" height="54" rx="6" fill="#f4f6f8" stroke="#9aa5b1" stroke-width="1.1"/>
+<text x="172" y="490" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="600" fill="#1f2933">summary()</text>
+<text x="172" y="509" font-family="Helvetica,Arial,sans-serif" font-size="11.5" fill="#5f6b76">then pub_ready()</text>
+<line x1="229" y1="522" x2="229" y2="544" stroke="#8c98a4" stroke-width="1.4" marker-end="url(#ar)"/>
+
+<rect x="162" y="548" width="134" height="54" rx="6" fill="#f4f6f8" stroke="#9aa5b1" stroke-width="1.1"/>
+<text x="172" y="570" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="600" fill="#1f2933">plot_realloc()</text>
+<text x="172" y="589" font-family="Helvetica,Arial,sans-serif" font-size="11.5" fill="#5f6b76">the transfer figure</text>
+
+<line x1="564" y1="340" x2="564" y2="362" stroke="#9a9a9a" stroke-width="1.4" marker-end="url(#ar-grey)"/>
+<rect x="484" y="366" width="160" height="66" rx="6" fill="#ececec" stroke="#9a9a9a" stroke-width="1.1" stroke-dasharray="5 3"/>
+<text x="496" y="388" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="600" fill="#595959">summary(), plot()</text>
+<text x="496" y="406" font-family="Helvetica,Arial,sans-serif" font-size="11.5" fill="#666666">average composition</text>
+<text x="496" y="422" font-family="Helvetica,Arial,sans-serif" font-size="11.5" fill="#666666">per group</text>
+
+<text x="16" y="626" font-family="Helvetica,Arial,sans-serif" font-size="11" font-style="italic" fill="#666666">Grey: planned, not yet implemented.</text>
+</svg>

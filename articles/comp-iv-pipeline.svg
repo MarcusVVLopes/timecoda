@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 440" width="660" height="440" role="img" aria-labelledby="t d">
+<title id="t">The comp_iv() pipeline</title>
+<desc id="d">A flowchart. A compD object and an outcome column enter comp_iv(). The composition is transformed to D minus 1 pivot ILR coordinates; the outcome is regressed on those coordinates and any covariates with the model engine named by model, and a family is supplied for glm and glmer only. From that fit two summaries follow side by side: an omnibus Wald test on all coordinates together, and one rotated refit per part giving its part-versus-remaining effect, which is read by summary() only. The result is a comp_iv object read by summary(), fit_check() and predict_realloc().</desc>
+<defs>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M0 0 L10 5 L0 10 z" fill="#8c98a4"/>
+</marker>
+</defs>
+<rect width="660" height="440" fill="#ffffff"/>
+
+<rect x="30" y="16" width="380" height="44" rx="22" fill="#e6edf3" stroke="#5b7c99" stroke-width="1.2"/>
+<text x="220" y="43" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="13" font-weight="600" fill="#1f2933">Input: a compD object and an outcome column</text>
+<line x1="220" y1="60" x2="220" y2="82" stroke="#8c98a4" stroke-width="1.4" marker-end="url(#ar)"/>
+
+<rect x="30" y="86" width="380" height="54" rx="6" fill="#f4f6f8" stroke="#9aa5b1" stroke-width="1.1"/>
+<text x="46" y="108" font-family="Helvetica,Arial,sans-serif" font-size="13" font-weight="600" fill="#1f2933">1 · Transform: ilr_transform()</text>
+<text x="46" y="127" font-family="Helvetica,Arial,sans-serif" font-size="11.5" fill="#5f6b76">D − 1 pivot coordinates, ilr1 … ilr(D−1)</text>
+<line x1="220" y1="140" x2="220" y2="162" stroke="#8c98a4" stroke-width="1.4" marker-end="url(#ar)"/>
+
+<rect x="30" y="166" width="380" height="54" rx="6" fill="#f4f6f8" stroke="#9aa5b1" stroke-width="1.1"/>
+<text x="46" y="188" font-family="Helvetica,Arial,sans-serif" font-size="13" font-weight="600" fill="#1f2933">2 · Fit: the engine named by model</text>
+<text x="46" y="207" font-family="Helvetica,Arial,sans-serif" font-size="11.5" fill="#5f6b76">outcome ~ ilr1 + … + ilr(D−1) + covariates</text>
+<text x="426" y="188" font-family="Helvetica,Arial,sans-serif" font-size="11" font-style="italic" fill="#7b8794">conditional:</text>
+<text x="426" y="204" font-family="Helvetica,Arial,sans-serif" font-size="11" font-style="italic" fill="#7b8794">family only for</text>
+<text x="426" y="218" font-family="Helvetica,Arial,sans-serif" font-size="11" font-style="italic" fill="#7b8794">"glm" and "glmer"</text>
+
+<line x1="220" y1="220" x2="220" y2="236" stroke="#8c98a4" stroke-width="1.4"/>
+<line x1="122" y1="236" x2="317" y2="236" stroke="#8c98a4" stroke-width="1.4"/>
+<line x1="122" y1="236" x2="122" y2="258" stroke="#8c98a4" stroke-width="1.4" marker-end="url(#ar)"/>
+<line x1="317" y1="236" x2="317" y2="258" stroke="#8c98a4" stroke-width="1.4" marker-end="url(#ar)"/>
+
+<rect x="30" y="262" width="185" height="70" rx="6" fill="#f4f6f8" stroke="#9aa5b1" stroke-width="1.1"/>
+<text x="42" y="284" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="600" fill="#1f2933">3 · Omnibus test</text>
+<text x="42" y="303" font-family="Helvetica,Arial,sans-serif" font-size="11.5" fill="#5f6b76">Wald test on all D − 1</text>
+<text x="42" y="319" font-family="Helvetica,Arial,sans-serif" font-size="11.5" fill="#5f6b76">coordinates together</text>
+
+<rect x="225" y="262" width="185" height="70" rx="6" fill="#f4f6f8" stroke="#9aa5b1" stroke-width="1.1"/>
+<text x="237" y="284" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="600" fill="#1f2933">4 · One refit per part</text>
+<text x="237" y="303" font-family="Helvetica,Arial,sans-serif" font-size="11.5" fill="#5f6b76">each part rotated first:</text>
+<text x="237" y="319" font-family="Helvetica,Arial,sans-serif" font-size="11.5" fill="#5f6b76">its "part vs remaining" effect</text>
+<text x="426" y="284" font-family="Helvetica,Arial,sans-serif" font-size="11" font-style="italic" fill="#7b8794">additive:</text>
+<text x="426" y="300" font-family="Helvetica,Arial,sans-serif" font-size="11" font-style="italic" fill="#7b8794">read by summary() only,</text>
+<text x="426" y="314" font-family="Helvetica,Arial,sans-serif" font-size="11" font-style="italic" fill="#7b8794">never by a prediction</text>
+
+<line x1="122" y1="332" x2="122" y2="348" stroke="#8c98a4" stroke-width="1.4"/>
+<line x1="317" y1="332" x2="317" y2="348" stroke="#8c98a4" stroke-width="1.4"/>
+<line x1="122" y1="348" x2="317" y2="348" stroke="#8c98a4" stroke-width="1.4"/>
+<line x1="220" y1="348" x2="220" y2="370" stroke="#8c98a4" stroke-width="1.4" marker-end="url(#ar)"/>
+
+<rect x="30" y="374" width="380" height="48" rx="24" fill="#e6edf3" stroke="#5b7c99" stroke-width="1.2"/>
+<text x="220" y="397" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="13" font-weight="600" fill="#1f2933">A comp_iv object</text>
+<text x="220" y="413" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="11" fill="#5f6b76">read by summary(), fit_check() and predict_realloc()</text>
+</svg>

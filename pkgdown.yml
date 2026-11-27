@@ -1,0 +1,14 @@
+pandoc: 3.8.3
+pkgdown: 2.2.1
+pkgdown_sha: ~
+articles:
+  advanced-models: advanced-models.html
+  composition-predictor: composition-predictor.html
+  composition-variable: composition-variable.html
+  optimal-composition: optimal-composition.html
+  predicting-reallocations: predicting-reallocations.html
+  timecoda: timecoda.html
+last_built: 2026-11-27T16:17Z
+urls:
+  reference: https://marcusvvlopes.github.io/timecoda/reference
+  article: https://marcusvvlopes.github.io/timecoda/articles
