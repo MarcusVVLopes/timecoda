@@ -14,6 +14,12 @@ count_messages <- function(expr) {
   n
 }
 
+# The printed report as one string, its lines joined and each run of blanks
+# made one, so that a phrase is found wherever the console width wrapped it.
+printed <- function(x) {
+  gsub("\\s+", " ", paste(utils::capture.output(print(x)), collapse = " "))
+}
+
 # Every composition on multiples of `spacing` (the last part the remainder),
 # over the whole simplex.
 simplex_grid <- function(spacing, nm = parts, total = 1440) {
@@ -77,7 +83,7 @@ test_that("the default call is the box of the mean +/- 3 SD on a grid of total /
   expect_identical(opt$spacing, 1440 / 144)
   cand <- as.matrix(opt$candidates[parts])
   expect_true(all(abs(cand / 10 - round(cand / 10)) < 1e-9))
-  expect_output(print(opt), "per-part box of the mean \\+/- 3 SD; candidates on multiples of 10")
+  expect_output(print(opt), "Region +per-part box of the mean \\+/- 3 SD\n  Grid +multiples of 10; ")
 })
 
 test_that("the total and the reference day come from the fit's composition", {
@@ -142,8 +148,8 @@ test_that("the ellipsoid is cut at the chi-square quantile", {
   expect_identical(opt$coverage, 0.80)
   expect_null(opt$sd)
   expect_true(all(opt$candidates$mahalanobis <= par$r2))
-  expect_output(print(opt), sprintf("80%% chi-square level, holding %.1f%% of the sample",
-                                    100 * par$share))
+  expect_match(printed(opt), sprintf("80%% chi-square level, holding %.1f%% of the sample",
+                                     100 * par$share), fixed = TRUE)
   # The bounded enumeration equals the whole simplex filtered by the ellipsoid.
   grid <- simplex_grid(30)
   zg <- as.matrix(ilr_transform(as.data.frame(grid), parts)[c("ilr1", "ilr2", "ilr3")])
@@ -494,7 +500,7 @@ test_that("by gives one region and one zone per level", {
   expect_false(isTRUE(all.equal(opt$region$parameters$female$mu,
                                 opt$region$parameters$male$mu)))
   expect_output(print(opt), "sex = male")
-  expect_output(print(opt), "of each level's sample")
+  expect_match(printed(opt), "of each level's sample", fixed = TRUE)
 })
 
 test_that("plot() draws a by level or the at values", {
@@ -585,14 +591,16 @@ test_that("a linear fit informs once and reports the boundary share", {
   expect_true(all(opt$zones$on_boundary >= 0 & opt$zones$on_boundary <= 1))
   expect_identical(count_messages(optimal_composition(quad, spacing = 30)), 0L)
   # The linear line replaces the outer-shell line, whatever the share.
-  text <- paste(utils::capture.output(print(opt)), collapse = "\n")
-  expect_match(text, "has no interior optimum: the zone is the edge of the region")
+  text <- printed(opt)
+  expect_match(text, "has no interior optimum: the zone is the edge of the region",
+               fixed = TRUE)
   expect_match(text, "Refit with `curvature = TRUE`", fixed = TRUE)
   expect_false(grepl("outer shell", text, fixed = TRUE))
   box <- optimal_composition(quad, direction = "min", coverage = c(0.05, 0.95),
                              spacing = 20)
   expect_gt(box$zones$on_boundary[1], 0.5)
-  expect_output(print(box), "% of the zone lies near the edge of the region \\(its outer shell\\)")
+  expect_match(printed(box), "% of the zone lies near the edge of the region (its outer shell)",
+               fixed = TRUE)
 })
 
 test_that("a curvature = TRUE fit is searched as a curved fit", {
@@ -653,8 +661,8 @@ test_that("the relative and absolute searches rank and zone alike", {
   check_types(list(zbmi = quad, obesity = risk), direction = "min",
               spacing = 30)
   expect_identical(both$rel$type, "relative")
-  expect_output(print(both$rel), "Scale: Mean difference versus the reference day")
-  expect_output(print(both$abs), "Scale: predicted response")
+  expect_output(print(both$rel), "Scale +Mean difference versus the reference day")
+  expect_output(print(both$abs), "Scale +predicted response")
   expect_output(print(both$abs), "Predicted zbmi at the zone centre")
   rel_text <- paste(utils::capture.output(print(both$rel)), collapse = "\n")
   expect_false(grepl("Predicted zbmi", rel_text, fixed = TRUE))
@@ -851,7 +859,7 @@ test_that("the ellipsoid takes another chi-square level through coverage", {
                                 spacing = 30)
   expect_gt(nrow(opt$candidates), nrow(narrow$candidates))
   expect_identical(opt$coverage, 0.95)
-  expect_output(print(opt), "95% chi-square")
+  expect_match(printed(opt), "95% chi-square", fixed = TRUE)
 })
 
 test_that("conf_level sets the gain's interval and nothing else", {
@@ -893,7 +901,7 @@ test_that("the ellipsoid split by a factor reports each level's share of its sam
   # The two levels' shares differ after rounding, so the report gives their range.
   pct <- round(100 * hand, 1)
   expect_false(pct[1] == pct[2])
-  expect_output(print(opt), sprintf(
+  expect_match(printed(opt), sprintf(
     "ILR ellipsoid at the 80%% chi-square level, holding %s%% to %s%% of each level's sample",
     format(min(pct), nsmall = 1), format(max(pct), nsmall = 1)
   ), fixed = TRUE)
@@ -1083,7 +1091,7 @@ test_that("the smoothed response surface of a logistic search is quadratic on th
   }
 })
 
-test_that("print() gives the region's limits and the box limits cut to the data", {
+test_that("print() gives the region's limits and marks the box limits cut to the data", {
   comps <- as.matrix(tc_comp_df(cd)[parts])
   n_clipped <- function(k) {
     m <- colMeans(comps)
@@ -1092,41 +1100,97 @@ test_that("print() gives the region's limits and the box limits cut to the data"
   }
   out <- function(...) {
     opt <- suppressMessages(optimal_composition(quad, spacing = 30, ...))
-    list(opt = opt, text = paste(utils::capture.output(print(opt)),
-                                 collapse = "\n"))
+    list(opt = opt, lines = utils::capture.output(print(opt)))
+  }
+  # The lines of the table under `title`, down to the blank line that ends it.
+  table_of <- function(lines, title) {
+    start <- which(lines == title)
+    expect_length(start, 1)
+    n <- which(lines[-seq_len(start)] == "")[1] - 1
+    lines[start + seq_len(n)]
+  }
+  # Each part's row of a table (under its header), split into its cells.
+  cells <- function(tab) {
+    purrr::map(tab[1 + seq_along(parts)], function(r) strsplit(trimws(r), " +")[[1]])
+  }
+  marked <- function(v, cut) paste0(sprintf("%.1f", v), ifelse(cut, "*", ""))
+  footnote <- function(p) {
+    kinds <- c(if (any(p$lo_clipped)) "minimum", if (any(p$hi_clipped)) "maximum")
+    paste("  * the part's observed", paste(kinds, collapse = " or "))
   }
   sd3 <- out()
   par <- sd3$opt$region$parameters$all
-  limits <- paste0(parts, " ", sprintf("%.1f", par$lo), " to ",
-                   sprintf("%.1f", par$hi), collapse = ", ")
-  expect_match(sd3$text, paste0("  Limits: ", limits), fixed = TRUE)
+  tab <- table_of(sd3$lines, "Region limits")
+  rows <- cells(tab)
+  expect_identical(purrr::map_chr(rows, 1), parts)
+  expect_identical(purrr::map_chr(rows, 2), marked(par$lo, par$lo_clipped))
+  expect_identical(purrr::map_chr(rows, 3), marked(par$hi, par$hi_clipped))
   expect_equal(sum(par$lo_clipped) + sum(par$hi_clipped), n_clipped(3))
-  expect_match(sd3$text, sprintf("%d of 8 box limits are the observed minimum",
-                                 n_clipped(3)), fixed = TRUE)
+  expect_identical(sum(endsWith(unlist(rows), "*")), n_clipped(3))
+  expect_identical(tab[length(tab)], footnote(par))
   sd5 <- out(sd = 5)
   expect_identical(n_clipped(5), 8L)
-  expect_match(sd5$text, "8 of 8 box limits are the observed minimum",
-               fixed = TRUE)
-  expect_match(sd5$text, "upper: MVPA, LPA, SB, SPT", fixed = TRUE)
-  # A percentile box is never cut, and another region prints its candidates.
+  tab <- table_of(sd5$lines, "Region limits")
+  expect_identical(sum(endsWith(unlist(cells(tab)), "*")), 8L)
+  expect_identical(tab[length(tab)], "  * the part's observed minimum or maximum")
+  # A percentile box is never cut, and another region prints its candidates'
+  # range.
   pct <- out(coverage = c(0.01, 0.99))
   expect_false(any(unlist(pct$opt$region$parameters$all[c("lo_clipped", "hi_clipped")])))
-  expect_no_match(pct$text, "box limits")
+  tab <- table_of(pct$lines, "Region limits")
+  expect_length(tab, 1 + length(parts))
+  expect_false(any(endsWith(unlist(cells(tab)), "*")))
   ell <- out(region = "ellipsoid")
-  expect_match(ell$text, "  Candidates span: MVPA ", fixed = TRUE)
-  expect_no_match(ell$text, "box limits")
-  # With `by`, one limits line per level and the count over the levels.
+  tab <- table_of(ell$lines, "Candidate range")
+  expect_length(tab, 1 + length(parts))
+  rows <- cells(tab)
+  cand <- ell$opt$candidates
+  expect_identical(purrr::map_chr(rows, 2),
+                   sprintf("%.1f", purrr::map_dbl(parts, function(q) min(cand[[q]]))))
+  expect_identical(purrr::map_chr(rows, 3),
+                   sprintf("%.1f", purrr::map_dbl(parts, function(q) max(cand[[q]]))))
+  # With `by`, one table per level, each marking its own cut limits.
   mod <- comp_iv(cd, "zbmi", model = "lm", moderator = "sex", curvature = TRUE)
   split <- suppressMessages(optimal_composition(mod, spacing = 30))
-  text <- paste(utils::capture.output(print(split)), collapse = "\n")
-  expect_match(text, "  Limits (sex = female): MVPA ", fixed = TRUE)
-  expect_match(text, "  Limits (sex = male): MVPA ", fixed = TRUE)
-  n <- sum(purrr::map_int(split$region$parameters, function(p) {
+  lines <- utils::capture.output(print(split))
+  n <- purrr::map_int(c("female", "male"), function(lev) {
+    p <- split$region$parameters[[lev]]
+    rows <- cells(table_of(lines, paste0("Region limits, sex = ", lev)))
+    expect_identical(purrr::map_chr(rows, 2), marked(p$lo, p$lo_clipped))
+    expect_identical(purrr::map_chr(rows, 3), marked(p$hi, p$hi_clipped))
     sum(p$lo_clipped) + sum(p$hi_clipped)
-  }))
-  expect_gt(n, 0)
-  expect_match(text, sprintf("%d of 16 box limits, over the 2 levels of sex", n),
-               fixed = TRUE)
+  })
+  expect_gt(sum(n), 0)
+})
+
+test_that("print() keeps every line within the console width", {
+  withr::local_options(width = 80)
+  labelled <- declare_composition(
+    timeuse, parts, closure = 1440, units = "min/day",
+    labels = c(MVPA = "Moderate-to-vigorous PA", LPA = "Light PA",
+               SB = "Sedentary behaviour", SPT = "Sleep")
+  )
+  bmi <- comp_iv(labelled, "zbmi", model = "lm", covariates = "sex",
+                 curvature = TRUE)
+  ob <- comp_iv(labelled, "obesity", model = "glm", family = "binomial",
+                covariates = "sex", curvature = TRUE)
+  mod <- comp_iv(labelled, "zbmi", model = "lm", moderator = "sex",
+                 curvature = TRUE)
+  two <- suppressMessages(optimal_composition(list(zbmi = bmi, obesity = ob),
+                                              direction = "min", spacing = 30))
+  split <- suppressMessages(optimal_composition(mod, direction = "min",
+                                                spacing = 30))
+  purrr::walk(list(two, split), function(opt) {
+    expect_lte(max(nchar(utils::capture.output(print(opt)))), 80)
+  })
+  # Rules that differ are given per outcome, each on its own line.
+  opposite <- suppressMessages(optimal_composition(
+    list(zbmi = bmi, obesity = ob), direction = c("max", "min"), spacing = 30
+  ))
+  expect_output(print(opposite), paste0(
+    "Zone rule +zbmi: best 5% of predictions, higher is better\n",
+    " +obesity: best 5% of predictions, lower is better"
+  ))
 })
 
 test_that("the default grid equals the per-point predictions for every engine", {
@@ -1282,8 +1346,8 @@ test_that("with by, each level is widened on its own", {
   overall <- widened$zones[widened$zones$outcome == "overall", ]
   expect_true(all(overall$n > 0))
   text <- paste(utils::capture.output(print(widened)), collapse = "\n")
-  expect_match(text, "sex = female\n  [0-9,]+ candidate compositions inside the region\n  No candidate is in every zone")
-  expect_no_match(text, "sex = male\n  [0-9,]+ candidate compositions inside the region\n  No candidate")
+  expect_match(text, "\nsex = female: [0-9,]+ candidates\n  No candidate is in every zone")
+  expect_match(text, "\nsex = male: [0-9,]+ candidates\n\n")
 })
 
 test_that("zones that do not meet by the best 50% keep the result at zone", {
@@ -1354,13 +1418,13 @@ test_that("print() states the share a widened search reached", {
   kept <- suppressMessages(search_opposed())
   widened <- suppressMessages(search_opposed(widen = TRUE))
   text <- paste(utils::capture.output(print(widened)), collapse = "\n")
-  expect_match(text, "Zone rule: zbmi, the best 5% of predictions", fixed = TRUE)
-  expect_match(text, "  No candidate is in every zone at zone = 0.95; the zones are widened to zone = 0.6, the best 40% of each outcome's predictions",
+  expect_match(text, "\n  Zone rule +best 5% of predictions, lower is better\n")
+  expect_match(printed(widened), "No candidate is in every zone at zone = 0.95; the zones are widened to zone = 0.6, the best 40% of each outcome's predictions",
                fixed = TRUE)
-  expect_match(text, "  Overall zone, widened to the best 40%: ", fixed = TRUE)
+  expect_match(text, "\nOverall zone, widened to the best 40%: ", fixed = TRUE)
   expect_match(text, "Gain from the reference day to the zone centre", fixed = TRUE)
   plain <- paste(utils::capture.output(print(kept)), collapse = "\n")
   expect_no_match(plain, "widened")
-  expect_match(plain, "  Overall zone: no overlap; the zones meet at zone = ",
+  expect_match(plain, "\nOverall zone: no overlap; the zones meet at zone = ",
                fixed = TRUE)
 })

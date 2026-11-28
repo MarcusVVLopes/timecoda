@@ -30,7 +30,7 @@ points.}
 \item{crosshairs}{Add crosshairs at the mean composition(s).}
 
 \item{conf_level}{One or more confidence levels, each drawn as a
-\code{ggtern::geom_confidence_tern()} region; set \code{NULL} to omit them.}
+\code{geom_confidence_tern()} region; set \code{NULL} to omit them.}
 
 \item{theme}{Optional \code{ggtern} theme added to every panel (e.g.,
 \code{ggtern::theme_bw()}). Default \code{NULL} keeps the \code{ggtern} default. Complete

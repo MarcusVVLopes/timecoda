@@ -309,13 +309,14 @@ the outcome level named by \code{category} against the reference level, so each
 }
 \section{Functions}{
 \itemize{
-\item \code{print(optimal_comp)}: Prints a text report of the search, zone by
-zone. Under the region it gives each part's limits (the box's, or the
-candidates' range for another region), per level of \code{by}, and the number
-of box limits cut to the observed range when there are any. For a level
-whose zones were widened, a line above its zones gives the share reached.
-For \code{type = "absolute"}, the report adds the predicted outcome at each
-zone centre.
+\item \code{print(optimal_comp)}: Prints a text report in sections. The report
+gives the search's settings, each part's region limits, each zone's centre
+and per-part range, and the gain from \code{from} to the zone centre. The limits
+are the box's, or the candidates' range for another region, and a mark
+shows a box limit that is the part's observed minimum or maximum. With
+\code{by}, the limits, zones and gain are given for each level. A widened search
+states how far its zones were widened, and \code{type = "absolute"} adds the
+predicted outcome at each zone centre.
 
 \item \code{plot(optimal_comp)}: Ternary panels (\code{choose(D, 3)}) of one
 outcome's surface on the search's \code{type} scale (the effect versus \code{from},

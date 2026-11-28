@@ -22,39 +22,44 @@ knitr::opts_chunk$set(
 )
 ```
 
+`timecoda` supports time-use compositional data analysis (CoDA) from data
+declaration through regression modelling, isotemporal time reallocations, and
+optimal-composition search. We assume basic familiarity with R regression
+workflows and core CoDA concepts (simplex closure, isometric log-ratio
+transformations, and pivot coordinates).
+
 ```{r load, message = FALSE}
 library(timecoda)
 ```
 
-## The example data
+Every analysis follows a single pipeline built around two objects: `compD` (a
+validated, closed composition) and `comp_iv` (a regression model with the
+composition as predictor).
 
-`timeuse`, included in the package, is a simulated sample of 300 participants.
-Each row holds one person's day, divided into four parts that sum to 1440
-minutes, namely moderate-to-vigorous physical activity (`MVPA`), light physical
-activity (`LPA`), sedentary behaviour (`SB`) and sleep (`SPT`, the sleep period
-time). The data also hold several outcomes, among them the body-mass-index
-z-score `zbmi` and the binary outcome `obesity`.
+```{r workflow, echo = FALSE, out.width = "82%", fig.alt = "Flowchart of the timecoda workflow. A data frame with the parts and an outcome enters declare_composition(), which returns a compD object. The compD is described with summary(), plot() and pub_ready(), and modelled as a predictor of an outcome with comp_iv(). A comp_iv() fit leads to fit_check() for diagnostics, to predict_realloc() for reallocation estimates, which are summarized with summary() and pub_ready() and drawn with plot_realloc(), and to optimal_composition() for a search of the fit for the best compositions. A second path, drawn in grey and dashed, would model the composition as the outcome with comp_dv(), described with summary() and plot(). A caption at the bottom explains that grey marks what is planned and not yet implemented."}
+knitr::include_graphics("workflow.svg")
+```
+
+*(Modelling the composition as the outcome via `comp_dv()` is planned for a
+future release.)*
+
+## Declaring and describing a composition
+
+We will use the bundled `timeuse` dataset, a simulated sample of 300
+participants whose 1,440-minute days are partitioned into moderate-to-vigorous
+physical activity (`MVPA`), light physical activity (`LPA`), sedentary
+behaviour (`SB`), and sleep period time (`SPT`), alongside BMI z-score (`zbmi`)
+and binary obesity status (`obesity`).
 
 ```{r data}
 parts <- c("MVPA", "LPA", "SB", "SPT")
 head(timeuse[c(parts, "zbmi", "obesity")])
 ```
 
-## The workflow
-
-```{r workflow, echo = FALSE, out.width = "82%", fig.alt = "Flowchart of the timecoda workflow. A data frame with the parts and an outcome enters declare_composition(), which returns a compD object. The compD is described with summary(), plot() and pub_ready(), and modelled as a predictor of an outcome with comp_iv(). A comp_iv() fit leads to fit_check() for diagnostics, to predict_realloc() for reallocation estimates, which are summarized with summary() and pub_ready() and drawn with plot_realloc(), and to optimal_composition() for a search of the fit for the best compositions. A second path, drawn in grey and dashed, would model the composition as the outcome with comp_dv(), described with summary() and plot(). A caption at the bottom explains that grey marks what is planned and not yet implemented."}
-knitr::include_graphics("workflow.svg")
-```
-
-Modelling the composition as the outcome is planned and will be added soon.
-
-## Declare the composition
-
-To prepare the data for analysis, declare the composition with
-`declare_composition()`. It checks the parts, imputes any zeroes and stores the
-closed composition in a `compD` object, which `comp_iv()` takes. To describe the
-composition, use `summary()` and `plot()`. To format the summary as a
-publication table, use `pub_ready()`.
+To prepare these columns for analysis, we declare the composition once with
+`declare_composition()`. It validates the parts, imputes any zeroes, closes
+rows to 1,440 minutes, and stores the metadata so downstream functions reuse
+the same labels and scale:
 
 ```{r declare}
 cd <- declare_composition(
@@ -68,45 +73,36 @@ cd <- declare_composition(
     SPT  = "Sleep"
   )
 )
-```
 
-```{r summary-cd}
 summary(object = cd)
 ```
 
-In the descriptive table, the closed geometric mean of each part comes first.
-Together, these means are the centre of the sample's compositions and sum to
-1440 minutes.
-
-To format the summary as tables with the `gt` package for publication,
-use `pub_ready()`.
+In the descriptive table, `geom_mean` gives the closed compositional centre
+summing to 1,440 minutes, while the remaining columns summarize the raw data.
+To format the summary for a manuscript with `gt`, pass it to `pub_ready()`:
 
 ```{r pub-ready-cd, eval = requireNamespace("gt", quietly = TRUE)}
 pub_ready(x = summary(object = cd), digits = 1)$desc
 ```
 
-To plot the composition, use `plot()`. The figure shows the density and the
-boxplot of each part, one ternary panel for each set of three parts and the
-variation matrix as a heatmap. Dashed crosshairs mark the geometric mean, and
-the closed curve is a 95% confidence region.
+We can inspect the marginal distributions, pairwise ternary projections (with
+the compositional centre and 95% confidence region), and variation matrix
+together using `plot()`:
 
 ```{r plot-cd, fig.width = 10, fig.height = 7, fig.alt = "Density curves and boxplots of the four parts in minutes per day; four ternary plots, one for each set of three parts, each with the geometric mean marked by dashed crosshairs and a 95% confidence region drawn as a closed curve; and a heatmap of the variation matrix between the four parts."}
 plot(x = cd)
 ```
 
-See more in [Working with a compositional variable](composition-variable.html).
+For zero imputation, multivariate outlier screening, and varying-total
+closures, see `vignette("composition-variable", package = "timecoda")`.
 
-## Model an outcome from the composition
+## Modelling an outcome from the composition
 
-To model an outcome from the composition, use `comp_iv()`. To read the fit, use
-`summary()`.
-
-In `comp_iv()`, the parts are converted into isometric log-ratio (ILR)
-coordinates and the outcome is fitted on those coordinates. You name the
-fitting engine with `model`.
-
-The example here fits `"glm"`, and `"lm"` works the same way. For the
-remaining engines, see `vignette("advanced-models", package = "timecoda")`.
+With `cd` declared, we can test whether daily time use is associated with
+obesity. Here we fit a logistic regression with `comp_iv()`, which handles the
+pivot ILR transformation behind the scenes (linear, multilevel, survival,
+ordinal, and robust engines use the same interface; see
+`vignette("advanced-models", package = "timecoda")`):
 
 ```{r fit}
 fit_ob <- comp_iv(comp = cd, outcome = "obesity", model = "glm",
@@ -114,122 +110,87 @@ fit_ob <- comp_iv(comp = cd, outcome = "obesity", model = "glm",
 fit_ob
 ```
 
+Printing the fit shows the underlying model call in the initial pivot basis.
+The summary runs an order-invariant omnibus Wald test across all coordinates
+and rotates the pivot basis $D$ times so each part appears first against the
+remaining $D - 1$ parts:
+
 ```{r summary-fit}
 summary(object = fit_ob)
 ```
 
-The summary reports, for each part, a "part vs remaining" odds ratio with its
-95% confidence interval. A value below 1, as for moderate-to-vigorous activity,
-means that a day in which the part is larger relative to the rest is associated
-with lower odds of obesity. A unit of a log-ratio coordinate has no direct
-reading in minutes. The reallocation estimates later in this vignette express
-the same model as minutes moved between parts.
+An odds ratio below 1, as for `MVPA`, means that a day with more `MVPA`
+relative to the rest of the day is associated with lower odds of obesity.
+Because a one-unit change in a log-ratio coordinate has no direct reading in
+minutes, we use reallocation estimates next to express the same model on the
+minute scale. See `vignette("composition-predictor", package = "timecoda")` for
+full model interpretation and response surfaces.
 
-See more in [Modelling an outcome from a
-composition](composition-predictor.html).
+## Checking the fit
 
-## Check the fit
-
-To judge whether the model fits, use `fit_check()`. It returns a `fit_check`
-object with the test statistics of the residual diagnostics chosen for the model
-class.
-
-Here these are the simulated quantile residuals of the suggested package
-`DHARMa`.
+Before interpreting predictions, we check residual diagnostics with
+`fit_check()`, which uses simulated quantile residuals from `DHARMa` for linear
+and generalized linear models:
 
 ```{r fit-check, eval = requireNamespace("DHARMa", quietly = TRUE), fig.show = "hide", fig.alt = "DHARMa residual diagnostic plots for the logistic model."}
 fit_check(object = fit_ob)
 ```
 
-None of the three p-values here is small, and thus we find no evidence of a lack
-of fit.
+None of the diagnostic checks flags a lack of fit.
 
-See more in [Modelling an outcome from a
-composition](composition-predictor.html).
+## Estimating time reallocations
 
-## Predict a reallocation
-
-To express the model's result as time moved between behaviours, use
-`predict_realloc()`. It compares a reallocated composition with a reference
-composition and returns the estimate on the model's effect scale, here an odds
-ratio. To tabulate the estimates, use `summary()`. To format them for
-publication, use `pub_ready()`.
-
-In a reallocation question, we ask how an outcome differs when a fixed amount of
-time is moved from one behaviour to another (e.g., 15 minutes from sedentary
-behaviour to moderate-to-vigorous activity).
-
-That change is estimated for a fixed duration moved between two parts, with the
-remaining parts held constant, using the compositional isotemporal substitution
-model.
-
-By default, a reallocation estimate starts from the reference composition,
-which is the closed geometric mean of the sample in minutes.
+To express the logistic model in minutes, we use compositional isotemporal
+substitution via `predict_realloc()`. By default, reallocations start from the
+sample's closed geometric mean and return relative contrasts on the model's
+effect scale (here, an odds ratio). Moving 15 minutes from sedentary behaviour
+to moderate-to-vigorous activity, holding sleep and light activity constant, is
+associated with lower odds of obesity:
 
 ```{r realloc}
 predict_realloc(object = fit_ob, from = "SB", to = "MVPA", delta = 15)
 ```
 
-The output shows an odds ratio below 1, so the reallocated day is associated
-with lower odds of obesity than the reference day.
-
-To get the predicted probability of obesity at each composition in place of
-the ratio, set `type = "absolute"` in `predict_realloc()`.
+To see the predicted probability of obesity at both compositions instead of the
+odds ratio, switch to `type = "absolute"`:
 
 ```{r realloc-absolute}
 predict_realloc(object = fit_ob, from = "SB", to = "MVPA", delta = 15,
                 type = "absolute")
 ```
 
-To estimate several magnitudes at once, give `delta` a vector.
+You can also evaluate several reallocation magnitudes in one call by passing a
+vector to `delta`, then format the sweep with `pub_ready()`:
 
 ```{r realloc-sweep}
 r <- predict_realloc(object = fit_ob, from = "SB", to = "MVPA",
                      delta = c(10, 20, 30))
-```
-
-```{r realloc-summary}
 summary(object = r)
 ```
-
-In the publication table of the sweep, each magnitude heads a column holding its
-odds ratio and confidence interval, and each odds ratio with a p-value below
-0.05 is marked with an asterisk.
 
 ```{r pub-ready-realloc, eval = requireNamespace("gt", quietly = TRUE)}
 pub_ready(x = summary(object = r), digits = 2)$effects
 ```
 
-See more in [Predicting time reallocations](predicting-reallocations.html).
-
-## Plot the reallocations
-
-To draw the estimates across magnitudes for every pair of parts, use
-`plot_realloc()`. The figure shows exactly the estimates that
-`predict_realloc()` returns for those magnitudes.
+To visualize reallocation curves across every pair of behaviours up to 60
+minutes, pass the fit to `plot_realloc()`:
 
 ```{r realloc-plot, fig.height = 6, fig.alt = "Reallocation plot in a lower-triangular grid of six panels, one per pair of parts, each showing the odds ratio of obesity with its confidence ribbon against the minutes reallocated between the two parts, and a dashed reference line at an odds ratio of 1."}
 plot_realloc(object = fit_ob, delta_max = 60)
 ```
 
-The shaded ribbon is the 95% confidence interval, and the dashed reference line
-marks an odds ratio of 1.
+See `vignette("predicting-reallocations", package = "timecoda")` for asymmetric
+reversals, one-to-all schemes, custom reference compositions, and subgroup
+moderation.
 
-See more in [Predicting time reallocations](predicting-reallocations.html).
+## Finding the optimal composition
 
-## Find the optimal composition
-
-To find the compositions with the best predicted outcome (the Goldilocks zone),
-use `optimal_composition()`. It searches a grid of compositions inside a region
-of the sample's compositions, and its zone holds the candidates whose
-predictions rank among the best. To draw the search, use `plot()`.
-
-Because the model fitted here is linear in the composition, its predictions keep
-improving in one direction, and the best days lie on the edge of the region
-covered by the search. As the printed note says, the zone therefore marks where
-that region ends. A model with curvature (`curvature = TRUE`) can hold an
-optimum inside the region. For a worked example that fits such a model, see
-the article on the Goldilocks zone.
+To identify daily compositions with the best predicted outcome (the Goldilocks
+zone), we search a feasible grid inside the empirical sample range with
+`optimal_composition()`. Because `fit_ob` is linear in ILR coordinates,
+predictions keep improving in one direction and the zone lands on the edge of
+the feasible region; refitting with `curvature = TRUE` allows an interior
+optimum (see `vignette("optimal-composition", package = "timecoda")`).
 
 ```{r optimal}
 opt <- optimal_composition(object = fit_ob, direction = "min")
@@ -240,23 +201,20 @@ opt
 plot(x = opt)
 ```
 
-In each panel the fourth part is held at the zone centre, the fill shows the
-odds ratio against the reference day, the red outline marks the zone and the red
-point marks its centre.
-
-See more in [Finding the Goldilocks zone](optimal-composition.html).
+In each ternary panel, the fourth behaviour is held at the zone centre (red
+point), and the red outline marks the zone boundary.
 
 ## See also
 
-- `vignette("composition-variable", package = "timecoda")`: declaring and
-  describing a composition in full.
+- `vignette("composition-variable", package = "timecoda")`: validating data,
+  imputing zeroes, flagging multivariate outliers, and descriptive plots.
 - `vignette("composition-predictor", package = "timecoda")`: modelling an
   outcome from a composition and checking the fit.
 - `vignette("predicting-reallocations", package = "timecoda")`: reallocation
-  estimates, their publication table and the reallocation figure.
-- `vignette("advanced-models", package = "timecoda")`: the other model engines,
-  the formula interface, moderation and the total as a covariate.
-- `vignette("optimal-composition", package = "timecoda")`: the search for the
-  Goldilocks zone, the compositions with the best predicted outcome.
-- Check the help page of each function for every argument and runnable
+  estimates, publication tables, and transfer curves.
+- `vignette("optimal-composition", package = "timecoda")`: single- and
+  multi-outcome Goldilocks-zone optimization.
+- `vignette("advanced-models", package = "timecoda")`: multilevel, survival,
+  ordinal, robust, and formula-based models.
+- Check each function's help page for full argument lists and runnable
   examples.

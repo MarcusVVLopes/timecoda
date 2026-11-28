@@ -22,20 +22,29 @@ knitr::opts_chunk$set(
 )
 ```
 
+Once a time-use composition is declared, `comp_iv()` models a health outcome as
+a function of that composition, handling the pivot isometric log-ratio (ILR)
+transformation, model fitting, and basis rotations in one call. It supports
+eleven model engines across continuous, binary, count, survival, ordinal, and
+multinomial outcomes:
+
+| Outcome type | Single-level model | Multilevel counterpart | Purpose and effect reported |
+|---|---|---|---|
+| Continuous | `"lm"` | `"lmer"` | mean difference in the outcome |
+| Continuous, outlier-robust | `"lmrob"` | `"rlmer"` | mean difference, down-weighting outlying observations |
+| Binary, count or rate (a GLM family) | `"glm"` | `"glmer"` | odds ratio (logit link); rate, risk or mean ratio (log link) |
+| Time to event | `"cox"` | `"coxme"` | hazard ratio; relative reallocations only |
+| Ordinal | `"clm"` | `"clmm"` | cumulative odds ratio; relative only |
+| Unordered categories | `"mblogit"` | `"mblogit"` with `random` | one relative-risk ratio per category; relative only |
+
+Here we focus on the two single-level engines `"lm"` and `"glm"` using the
+bundled `timeuse` data (`zbmi`, `obesity`, and `sex`); for the remaining
+engines and the `ilr()` formula interface, see
+`vignette("advanced-models", package = "timecoda")`.
+
 ```{r load, message = FALSE}
 library(timecoda)
 ```
-
-# The example data
-
-`comp_iv()` fits a model of an outcome on a time-use composition, which enters
-as the independent variable. This vignette describes what the function fits,
-how to read its summary and how to check the fit.
-
-The examples use the bundled `timeuse` data. For a description of these data,
-see `vignette("composition-variable", package = "timecoda")`. The
-body-mass-index z-score (`zbmi`), the obesity indicator (`obesity`) and sex
-(`sex`) are used beside the four parts of the day.
 
 ```{r declare}
 cd <- declare_composition(
@@ -51,47 +60,49 @@ cd <- declare_composition(
 )
 ```
 
-# Part 1. The composition as a predictor
+## Fitting a model
 
-## Pivot coordinates and the per-part effect
+To model a continuous outcome like `zbmi`, pass the declared composition, the
+outcome name, and `model = "lm"` to `comp_iv()`:
 
-Dumuid, Stanford, Martín-Fernández, et al. (2018) model an outcome on the
-isometric log-ratio (ILR) coordinates of a time-use composition with
-compositional multiple linear regression.
+```{r fit-bmi}
+fit_bmi <- comp_iv(comp = cd, outcome = "zbmi", model = "lm")
+summary(object = fit_bmi)
+```
 
-For pivot coordinates, see
-`vignette("composition-variable", package = "timecoda")`.
+Two things happen behind the scenes here. First, `comp_iv()` transforms the
+four parts into $D - 1 = 3$ pivot ILR coordinates and fits the linear model,
+running a joint Wald test across all three coordinates. That omnibus test is
+invariant to part order and tests whether the composition as a whole is
+associated with `zbmi`. (For linear models, the Wald statistic equals $(D - 1)$
+times the $F$ statistic, so in small samples its p-value is slightly smaller
+than that of an exact $F$ test.)
 
-In a fit on one set of pivot coordinates, only the first coefficient refers to
-a single part, and the remaining coefficients are contrasts between groups of
-parts whose membership depends on the order in which the parts were listed.
-Even the first coefficient represents a net reallocation of time towards the
-first part from the remaining parts together (Dumuid et al., 2020). Therefore,
-`comp_iv()` reports one effect per part, each taken from a refit in which that
-part is placed first. A separate quantity, the reallocation estimate, is the
-expected change in the outcome when a stated number of minutes moves between
-two named parts. For details, see
-`vignette("predicting-reallocations", package = "timecoda")`.
-
-## What `comp_iv()` does
-
-A single call to `comp_iv()` performs four steps.
+Second, because only the first pivot coordinate isolates a single behaviour
+against the geometric mean of the rest (Dumuid et al., 2018; Dumuid et al.,
+2020), `comp_iv()` refits the same model $D$ times—rotating each part into the
+first position—and pulls out that first slope for each row of the summary
+table. Each refit is just a rotation of the same model and produces identical
+fitted values.
 
 ```{r pipeline, echo = FALSE, out.width = "82%", fig.alt = "Flowchart of the comp_iv() pipeline: a compD object and an outcome column enter; the composition is transformed to D minus 1 pivot ILR coordinates; the outcome is fitted on those coordinates and any covariates with the model engine named by model, with a family supplied for glm and glmer only; an omnibus Wald test on all coordinates together and one rotated refit per part, giving its part-versus-remaining effect and read by summary() only, follow side by side; the result is a comp_iv object read by summary(), fit_check() and the reallocation functions."}
 knitr::include_graphics("comp-iv-pipeline.svg")
 ```
 
-The "Omnibus test" is a Wald test of the null hypothesis that all `D - 1`
-coordinate coefficients are zero (i.e., of no association between the
-composition as a whole and the outcome). The test statistic is referred to a
-chi-squared distribution on `D - 1` degrees of freedom. Because the statistic
-is the same for every choice of pivot coordinates, the test does not depend on
-the order of the parts.
+In the table above, a one-unit increase in the pivot coordinate for `MVPA` is
+associated with a 0.708-unit lower mean `zbmi`. Keep in mind that a one-unit
+shift in a pivot coordinate is large: for a four-part composition, it
+multiplies the ratio of that part to the geometric mean of the other three by
+$\exp(\sqrt{4/3}) \approx 3.17$. That is why these slopes are best read for
+direction and relative strength, while minute-based effect sizes come from
+`predict_realloc()` (see
+`vignette("predicting-reallocations", package = "timecoda")`). Note also that
+per-part p-values are unadjusted for multiple comparisons.
 
-Each refit is the same model in rotated coordinates and has the same fitted
-values.
+## Binary outcomes and covariates
 
-## A complete fit
+For a binary outcome like `obesity`, switch to `model = "glm"` with
+`family = "binomial"`, and pass adjustment variables to `covariates`:
 
 ```{r fit-ob}
 fit_ob <- comp_iv(
@@ -103,77 +114,22 @@ fit_ob <- comp_iv(
 )
 ```
 
-## Reading the summary
-
 ```{r summary-ob}
 summary(object = fit_ob)
 ```
 
-The convergence line reports on the "Fit" step in the backend's own terms, and
-`OK` means that no warning was issued. When a fit issues warnings, they are
-listed in place of this line.
+Because this is a logistic model, the pivot coefficients are automatically
+exponentiated to odds ratios (similarly, `"log"` links report rate, risk, or
+mean ratios, and `"identity"` links report mean differences). You can pass
+`family` either as a string (`"binomial"`) or a family object
+(`binomial(link = "logit")`). Here, spending more time in `MVPA` relative to the
+rest of the day is associated with lower odds of obesity (OR = 0.501, 95% CI
+[0.382, 0.656]), adjusted for sex. The `Convergence: OK` line confirms the
+backend fitted without warnings; if any warnings occur, they appear there.
 
-The table comes from the "One refit per part" step and has one row per part
-against the remaining parts. The `Global Composition` row repeats the omnibus
-p-value and holds `NA` in its effect columns, because the composition as a whole
-has no single effect size. The 95% Wald confidence interval is bounded by
-`conf.low` and `conf.high`, and the per-part p-values are not adjusted for
-multiple comparisons.
-
-The effect measure named above the table depends on the model and its link. For
-a logistic regression, it is the odds ratio, the factor by which the odds of the
-outcome are multiplied for a one-unit increase in the part's first pivot
-coordinate, and for a linear model it is a mean difference, the change in the
-mean outcome for the same one-unit increase. A one-unit increase corresponds to
-multiplying the ratio of the part to the geometric mean of the other parts by
-`exp(sqrt(D / (D - 1)))`, about 3.17 for four parts. With an odds ratio of
-0.501, we read more moderate-to-vigorous activity relative to the rest of the
-day as associated with lower odds of obesity, after adjustment for sex.
-
-# Part 2. The steps in detail
-
-## Choosing the model
-
-| Outcome type | Single-level model | Multilevel counterpart | Purpose and effect reported |
-|---|---|---|---|
-| Continuous | `"lm"` | `"lmer"` | mean difference in the outcome |
-| Continuous, outlier-robust | `"lmrob"` | `"rlmer"` | mean difference, down-weighting outlying observations |
-| Binary, count or rate (a GLM family) | `"glm"` | `"glmer"` | odds ratio (logit link); rate, risk or mean ratio (log link) |
-| Time to event | `"cox"` | `"coxme"` | hazard ratio; relative reallocations only |
-| Ordinal | `"clm"` | `"clmm"` | cumulative odds ratio; relative only |
-| Unordered categories | `"mblogit"` | `"mblogit"` with `random` | one relative-risk ratio per category; relative only |
-
-Here, you fit the single-level engines of the first and third rows, `"lm"` and
-`"glm"`. For the remaining engines, see the help page that `?comp_iv` opens and
-`vignette("advanced-models", package = "timecoda")`.
-
-```{r fit-bmi}
-fit_bmi <- comp_iv(comp = cd, outcome = "zbmi", model = "lm")
-summary(object = fit_bmi)
-```
-
-On the mean-difference scale, a one-unit increase in the pivot coordinate for
-moderate-to-vigorous activity is associated with a mean z-BMI 0.708 lower.
-
-For a linear model, the Wald statistic equals `D - 1` times the F statistic for
-the same hypothesis, but the chi-squared distribution it is referred to ignores
-the uncertainty in the residual variance. Therefore, in small samples, its
-p-value is slightly smaller than that of the exact F test.
-
-You can give a family by name, as `"binomial"` above, or as a family object such
-as `binomial(link = "log")`, and its link sets the effect measure.
-
-| Link | Effect measure |
-|---|---|
-| `"logit"` (the default for `binomial`) | odds ratio |
-| `"log"` (the default for `poisson`) | rate ratio for a Poisson family, risk ratio for a binomial family, ratio of means otherwise |
-| `"identity"` (the default for `gaussian`) | mean difference |
-
-## Covariates
-
-To adjust for other variables, you name their columns in the declared data with
-`covariates`. The logistic fit `fit_ob` was adjusted for sex. To see what the
-argument changes, refit it without adjustment.
+Variables passed to `covariates` enter as main effects. Comparing `fit_ob` with
+an unadjusted fit shows that sex barely shifts the compositional estimates in
+these data:
 
 ```{r fit-ob-unadj}
 fit_ob_unadj <- comp_iv(comp = cd, outcome = "obesity", model = "glm",
@@ -181,107 +137,51 @@ fit_ob_unadj <- comp_iv(comp = cd, outcome = "obesity", model = "glm",
 summary(object = fit_ob_unadj)
 ```
 
-Because each covariate enters the model as a main effect, the association
-between the composition and the outcome is the same at every covariate value.
-When a model includes interactions between the composition and a covariate,
-reallocation estimates depend on the covariate's value. To learn how to supply
-that value, see the section on covariates in
-`vignette("predicting-reallocations", package = "timecoda")`. For a composition
-whose row totals vary between people, the total itself can enter as a covariate
-through `include_total = TRUE`. For that option, see the section on the total
-as a covariate in `vignette("advanced-models", package = "timecoda")`.
+If you need composition-by-covariate interactions, see the moderation section
+in `vignette("advanced-models", package = "timecoda")`. For compositions whose
+row totals vary across participants (such as waking wear time), you can also
+include the total itself via `include_total = TRUE`.
 
-## Backend arguments
-
-To pass other arguments to the underlying fitting function, use `model_args`.
-These are arguments that `comp_iv()` does not expose itself (e.g., observation
-weights or a control object for the fitting algorithm). For details, see
-`?comp_iv`.
-
-## Confidence level
-
-To set the coverage of the per-part confidence intervals, use `conf_level`, an
-argument of `summary()`. The fitted model is reused unchanged.
+Two minor options are worth keeping in mind: you can change confidence interval
+coverage without refitting via `summary(object = fit_ob, conf_level = 0.90)`,
+and you can forward extra backend arguments (like observation weights or
+optimizer controls) through `model_args` (see `?comp_iv`).
 
 ```{r summary-90}
 summary(object = fit_ob, conf_level = 0.90)
 ```
 
-# Part 3. Checking the fit
+## Checking the fit
 
-`fit_check()` runs residual diagnostics suited to the model class. For `lm` and
-`glm` fits, it uses the DHARMa package (Hartig, 2026), which simulates new
-outcomes from the fitted model and records where each observed value falls among
-its simulated values. When the model is correctly specified, these simulated
-quantile residuals follow a uniform distribution between 0 and 1, for a binary
-outcome as for a continuous one (Dunn & Smyth, 1996). DHARMa is a suggested
-package, and you must install it before using `fit_check()` on these fits.
-
-By default, DHARMa fixes its own random seed, so the output is reproducible
-without `set.seed()`. To use a different seed, pass it to `fit_check()` as its
-`seed` argument.
+Before plotting or reporting predictions, we check model assumptions with
+`fit_check()`. For `"lm"`, `"glm"`, `"lmer"`, and `"glmer"` fits, it computes
+simulated quantile residuals via `DHARMa` (Dunn & Smyth, 1996; Hartig, 2026)
+under a fixed internal seed (override with `seed` if needed):
 
 ```{r check-ob, eval = requireNamespace("DHARMa", quietly = TRUE), fig.width = 9, fig.height = 5, fig.alt = "DHARMa diagnostic panels for the logistic fit: a QQ plot of the simulated quantile residuals against the uniform distribution, with the points along the diagonal and the three test results printed on it, and the residuals plotted against the rank-transformed model predictions, with quantile curves close to dashed lines at 0.25, 0.5 and 0.75."}
 fit_check(object = fit_ob)
 ```
 
-- The KS uniformity row is the Kolmogorov-Smirnov statistic comparing the
-  residuals with the uniform distribution, and a small p-value is evidence that
-  the observed outcomes are not distributed as the fitted model implies.
-- The Dispersion row is the ratio of the observed residual variation to the
-  variation among the simulations, which is close to 1 when the two agree, and a
-  small p-value is evidence of more or less variation in the outcome than the
-  model implies.
-- The Outliers row counts the observations lying outside the range of every
-  simulated value, and a small p-value is evidence of more such observations
-  than chance would produce.
+None of the three checks suggests misspecification for `fit_ob`.
 
-In the right panel, each residual is plotted against the model's prediction,
-rank-transformed to lie between 0 and 1. The dashed lines mark 0.25, 0.5 and
-0.75, and the solid curves are the residual quantiles at those levels, estimated
-across the range of predictions. Curves far from their dashed lines are evidence
-of a systematic departure, and the result of that comparison is stated in the
-panel's title. The linear fit is checked in the same way.
+Running the same diagnostic on `fit_bmi` flags a single observation outside the
+simulated range (marked by a star in the right panel), which is consistent with
+random variation ($p = 0.738$). At the console, `DHARMa` may also emit an
+`mgcv` warning when estimating the visual quantile curves; this affects only
+the plotted curves and not the three test statistics.
 
 ```{r check-bmi, eval = requireNamespace("DHARMa", quietly = TRUE), warning = FALSE, fig.width = 9, fig.height = 5, fig.alt = "DHARMa diagnostic panels for the linear fit: a QQ plot of the simulated quantile residuals against the uniform distribution, with the points along the diagonal, and the residuals plotted against the rank-transformed model predictions, with quantile curves close to dashed lines at 0.25, 0.5 and 0.75 and one outlying observation marked by a star at the bottom edge."}
 fit_check(object = fit_bmi)
 ```
 
-The one observation outside the simulated range is marked by a star in the
-right-hand panel. In the test of the Outliers row, we find no evidence of more
-such observations than chance would produce (p = 0.738). At the console, this
-call can also print a warning from the mgcv package, which DHARMa uses to
-estimate the quantile curves in the right-hand panel. The warning concerns those
-curves and the panel's title, and the tests in the report are computed without
-them.
+## Visualizing the fitted surface
 
-# Part 4. Publication table
-
-`summary()` returns its tables at full numeric precision. To turn them into a
-formatted table, use `pub_ready()`, which uses the suggested package `gt`.
-
-```{r pub-ready, eval = requireNamespace("gt", quietly = TRUE)}
-pub_ready(x = summary(object = fit_ob))$effects
-```
-
-Effects and interval bounds are rounded to `digits` decimal places, two by
-default, and p-values below 0.001 are shown as `<0.001`.
-
-`pub_ready()` returns a list of tables, and at the console the bare call
-`pub_ready(x = summary(object = fit_ob))` displays every table it builds.
-
-# Part 5. Seeing the fitted surface
-
-`plot()` draws what the model predicts across the composition, with one ternary
-panel for each group of three parts. The fourth part is held at its value in the
-reference composition, which is marked by a black point. The model is evaluated
-at a grid of compositions, each contrasted with the reference composition as an
-odds ratio, the same contrast that `predict_realloc()` reports in a table. By
-default, each computed composition is drawn as one hexagonal tile filled with
-its own odds ratio, and nothing is interpolated between the tiles.
-
-For the reference composition, see
-`vignette("predicting-reallocations", package = "timecoda")`.
+To see how predicted obesity risk varies across the simplex, we plot the fitted
+surface. For a four-part composition, `plot()` draws one ternary panel per
+three-part subcomposition—holding the fourth part at the sample's closed
+geometric mean (marked by the black point)—with each grid cell shown as an
+uninterpolated hexagonal tile coloured by its odds ratio relative to that
+reference day:
 
 ```{r plot-ob, fig.width = 7, fig.height = 5, fig.alt = "One of four ternary panels, one for each group of three parts, of the logistic fit's odds-ratio surface as tiles. In each, several dozen small hexagonal tiles form a patch inside the triangle, coloured from dark purple for the panel's lowest odds ratio to yellow for its highest, with a black point at the reference composition; the rest of the triangle is blank grey."}
 p_ob <- plot(x = fit_ob)
@@ -292,24 +192,35 @@ mvpa_panels <- grep("MVPA", names(p_ob), value = TRUE)
 mvpa_low <- min(purrr::map_dbl(p_ob[mvpa_panels], function(p) min(p$data$.pred)))
 ```
 
-The surface is drawn only where the sample has data (i.e., where each of the
-three parts lies between its 5th and 95th percentile in the observed
-compositions). The blank corners lie outside that band. To colour the whole
-triangle, set `quantiles = NULL`. In the three panels that contain
-moderate-to-vigorous activity, the odds ratio is lowest where that activity is
-highest, down to `r round(mvpa_low, 2)` at the computed compositions, and it
-rises towards the low-activity edge of the band.
+To avoid extrapolating into empty corners of the simplex, predictions are
+masked by default to the region where each part falls between its 5th and 95th
+observed percentiles (pass `quantiles = NULL` to colour the entire triangle).
+In the three panels containing `MVPA`, predicted odds ratios drop as low as
+`r round(mvpa_low, 2)` toward the high-`MVPA` edge of the observed band.
 
-With `smooth = TRUE`, `plot()` fits a quadratic surface through the computed
-values on the log scale of the odds ratio and draws it on a finer lattice, on
-which the colour changes smoothly across the band. Either way, the panels' data
-and the numbers quoted from them come from the same grid.
+For a continuous colour gradient instead of discrete hexagonal tiles, pass
+`smooth = TRUE`, which fits a quadratic surface on the link scale over a finer
+lattice using the same underlying grid values:
 
 ```{r plot-ob-smooth, fig.width = 7, fig.height = 5, fig.alt = "One of four ternary panels, one for each group of three parts, of the logistic fit's smoothed odds-ratio surface. In each, a continuous patch of colour inside the triangle runs from dark purple for the panel's lowest odds ratio to yellow for its highest, with a black point at the reference composition; the rest of the triangle is blank grey."}
 plot(x = fit_ob, smooth = TRUE)
 ```
 
-# References
+## Publication tables
+
+To turn the full-precision `summary()` output into a formatted `gt` table for a
+manuscript, pass it to `pub_ready()`:
+
+```{r pub-ready, eval = requireNamespace("gt", quietly = TRUE)}
+pub_ready(x = summary(object = fit_ob))$effects
+```
+
+Estimates and confidence bounds default to two decimal places (`digits = 2`),
+with p-values below 0.001 displayed as `<0.001`. Printing
+`pub_ready(x = summary(object = fit_ob))` without `$effects` displays all
+tables built for that summary.
+
+## References
 
 Dumuid, D., Stanford, T. E., Martín-Fernández, J. A., Pedišić, Ž., Maher,
 C. A., Lewis, L. K., Hron, K., Katzmarzyk, P. T., Chaput, J. P., Fogelholm,
@@ -329,7 +240,7 @@ Computational and Graphical Statistics*, 5, 236-244.
 Hartig, F. (2026). *DHARMa: Residual diagnostics for hierarchical (multi-level
 / mixed) regression models*. R package version 0.5.0.
 
-# See also
+## See also
 
 - `vignette("composition-variable", package = "timecoda")`: declaring and
   describing the composition that `comp_iv()` takes as input.
@@ -337,6 +248,6 @@ Hartig, F. (2026). *DHARMa: Residual diagnostics for hierarchical (multi-level
   change in the outcome when time moves between two parts, from a
   `comp_iv()` fit.
 - `vignette("advanced-models", package = "timecoda")`: the other model engines,
-  the formula interface, moderation and the total as a covariate.
+  the formula interface, moderation, and the total as a covariate.
 - `vignette("timecoda", package = "timecoda")`: the whole workflow in one
   analysis.

@@ -23,7 +23,7 @@
 #'   points.
 #' @param crosshairs Add crosshairs at the mean composition(s).
 #' @param conf_level One or more confidence levels, each drawn as a
-#'   `ggtern::geom_confidence_tern()` region; set `NULL` to omit them.
+#'   `geom_confidence_tern()` region; set `NULL` to omit them.
 #' @param theme Optional `ggtern` theme added to every panel (e.g.,
 #'   `ggtern::theme_bw()`). Default `NULL` keeps the `ggtern` default. Complete
 #'   themes include `theme_bw()`, `theme_light()`, `theme_dark()`,

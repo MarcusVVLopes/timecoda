@@ -1015,25 +1015,32 @@ tc_optimal_candidates <- function(row, comp_obs, given, coverage, sd, spacing,
 
 # Methods ---------------------------------------------------------------------
 
-#' @describeIn optimal_composition Prints a text report of the search, zone by
-#'   zone. Under the region it gives each part's limits (the box's, or the
-#'   candidates' range for another region), per level of `by`, and the number
-#'   of box limits cut to the observed range when there are any. For a level
-#'   whose zones were widened, a line above its zones gives the share reached.
-#'   For `type = "absolute"`, the report adds the predicted outcome at each
-#'   zone centre.
+#' @describeIn optimal_composition Prints a text report in sections. The report
+#'   gives the search's settings, each part's region limits, each zone's centre
+#'   and per-part range, and the gain from `from` to the zone centre. The limits
+#'   are the box's, or the candidates' range for another region, and a mark
+#'   shows a box limit that is the part's observed minimum or maximum. With
+#'   `by`, the limits, zones and gain are given for each level. A widened search
+#'   states how far its zones were widened, and `type = "absolute"` adds the
+#'   predicted outcome at each zone centre.
 #' @param x An `optimal_comp` object.
 #' @param ... Unused by [print()], present for S3 consistency. [plot()] takes
 #'   no further arguments, and one given there is an error.
 #' @export
 print.optimal_comp <- function(x, ...) {
   labs <- tc_part_labels(x$parts, x$labels)
+  lab_col <- format(labs)
   digits <- max(1, 3 - floor(log10(x$total)))
   num <- function(v) as.character(signif(v, 3))
-  grid <- if (!is.null(x$spacing)) {
-    glue::glue("; candidates on multiples of {tc_with_units(signif(x$spacing, 4), x$units)}")
-  } else {
-    ""
+  count <- function(n) format(n, big.mark = ",")
+  # Right-align a column of numbers given as text.
+  right <- function(v) formatC(v, width = max(nchar(v)))
+  # Wrap `text` to the console width: the first line follows `first`, the
+  # others are indented as deep as `first` is long.
+  wrap <- function(text, first = "  ") {
+    lines <- strwrap(text, width = getOption("width") - nchar(first) + 1)
+    lead <- c(first, rep(strrep(" ", nchar(first)), length(lines) - 1))
+    glue::glue("{lead}{lines}")
   }
   # Each row is compared with its own fit's reference day.
   refs <- purrr::map(x$optimum$outcome, function(k) {
@@ -1060,103 +1067,114 @@ print.optimal_comp <- function(x, ...) {
     t <- x$threshold[[k]]
     better <- if (x$direction[[k]] == "max") "higher" else "lower"
     if (is.null(t)) {
-      glue::glue("{k}, the best {format(100 * (1 - x$zone))}% of predictions ({better} is better)")
+      glue::glue("best {format(100 * (1 - x$zone))}% of predictions, {better} is better")
     } else if (length(t) == 2) {
-      glue::glue("{k}, {ruled(k)} in [{num(t[1])}, {num(t[2])}]")
+      glue::glue("{ruled(k)} in [{num(t[1])}, {num(t[2])}]")
     } else {
-      glue::glue("{k}, {ruled(k)} {if (better == 'higher') '>=' else '<='} {num(t)}")
+      glue::glue("{ruled(k)} {if (better == 'higher') '>=' else '<='} {num(t)}")
     }
   })
+  # One rule for every outcome is given once, without their names.
+  rules <- if (length(unique(rules)) == 1) rules[1] else glue::glue("{x$outcomes}: {rules}")
   scale <- if (!relative) {
     "predicted response"
   } else if (length(x$outcomes) == 1) {
     glue::glue("{x$measures[[1]]} versus {from_name}")
   } else {
     per_outcome <- glue::glue_collapse(glue::glue("{x$measures} ({x$outcomes})"), sep = ", ")
-    glue::glue("{per_outcome} versus {from_name}")
+    glue::glue("{per_outcome}, versus {from_name}")
   }
-  region <- tc_optimal_regions[[x$region$name]]$label(x$region$parameters, x$sd)
-  # Under the region, each part's limits (the box's stored limits, else the
-  # candidates' range), one line per level of `by`.
-  limits <- purrr::map_chr(names(x$n_candidates), function(lev) {
-    if (x$region$name == "box") {
-      head <- "Limits"
-      lo <- x$region$parameters[[lev]]$lo[x$parts]
-      hi <- x$region$parameters[[lev]]$hi[x$parts]
+  # With `by`, each level's candidate count heads its own zones.
+  n_all <- if (is.null(x$by)) count(x$n_candidates[[1]])
+  grid <- if (!is.null(x$spacing)) {
+    n_grid <- if (!is.null(n_all)) glue::glue("; {n_all} candidates") else ""
+    glue::glue("multiples of {tc_with_units(signif(x$spacing, 4), x$units)}{n_grid}")
+  }
+  settings <- purrr::compact(list(
+    Parts = glue::glue(
+      "{glue::glue_collapse(labs, sep = ', ')} (total = {tc_with_units(x$total, x$units)})"
+    ),
+    Region = tc_optimal_regions[[x$region$name]]$label(x$region$parameters, x$sd),
+    Grid = grid,
+    Candidates = if (is.null(grid)) n_all,
+    Scale = scale,
+    `Zone rule` = rules
+  ))
+  key_width <- max(nchar(names(settings)))
+  search <- c("Search", unlist(purrr::imap(settings, function(values, key) {
+    first <- glue::glue("  {formatC(key, width = -key_width)}   ")
+    pad <- strrep(" ", nchar(first))
+    purrr::map2(values, seq_along(values), function(v, i) {
+      wrap(v, if (i == 1) first else pad)
+    })
+  })))
+  # Each part's limits per level: the box's stored limits, with a mark where
+  # one was cut to the part's observed minimum or maximum, else the
+  # candidates' range.
+  box <- x$region$name == "box"
+  units <- if (!is.null(x$units)) glue::glue(" ({x$units})") else ""
+  limits <- purrr::map(names(x$n_candidates), function(lev) {
+    if (box) {
+      p <- x$region$parameters[[lev]]
+      lo <- p$lo[x$parts]
+      hi <- p$hi[x$parts]
+      lo_cut <- unname(p$lo_clipped[x$parts])
+      hi_cut <- unname(p$hi_clipped[x$parts])
     } else {
-      head <- "Candidates span"
       cand <- x$candidates
       if (!is.null(x$by)) cand <- cand[as.character(cand[[x$by]]) == lev, ]
       lo <- purrr::map_dbl(x$parts, function(q) min(cand[[q]]))
       hi <- purrr::map_dbl(x$parts, function(q) max(cand[[q]]))
+      lo_cut <- hi_cut <- rep(FALSE, length(x$parts))
     }
-    hi_fmt <- tc_with_units(tc_fmt(hi, digits), x$units)
-    each <- glue::glue("{x$parts} {tc_fmt(lo, digits)} to {hi_fmt}")
-    at_level <- if (!is.null(x$by)) glue::glue(" ({x$by} = {lev})") else ""
-    glue::glue("{head}{at_level}: {glue::glue_collapse(each, sep = ', ')}")
-  })
-  # Each line starts on its own, indented under the region (`.trim = FALSE`, or
-  # glue would trim the leading newline).
-  limits <- glue::glue_collapse(glue::glue("\n  {limits}", .trim = FALSE))
-  # A line under the limits when a box limit was cut to its part's observed
-  # minimum or maximum: which ones, or with `by` their count over the levels.
-  clip <- ""
-  if (x$region$name == "box") {
-    pars <- x$region$parameters
-    n_clip <- sum(purrr::map_int(pars, function(p) {
-      sum(p$lo_clipped) + sum(p$hi_clipped)
-    }))
-    if (n_clip > 0) {
-      n_limits <- 2 * length(x$parts) * length(pars)
-      clip <- if (is.null(x$by)) {
-        p <- pars[[1]]
-        sides <- c(
-          if (any(p$lo_clipped)) {
-            glue::glue("lower: {glue::glue_collapse(names(which(p$lo_clipped)), sep = ', ')}")
-          },
-          if (any(p$hi_clipped)) {
-            glue::glue("upper: {glue::glue_collapse(names(which(p$hi_clipped)), sep = ', ')}")
-          }
-        )
-        glue::glue("{n_clip} of {n_limits} box limits are the observed minimum or maximum of their part ({glue::glue_collapse(sides, sep = '; ')})")
-      } else {
-        glue::glue("{n_clip} of {n_limits} box limits, over the {length(pars)} levels of {x$by}, are the observed minimum or maximum of their part")
+    marked <- any(lo_cut) || any(hi_cut)
+    # A blank in place of the mark keeps every number on one column.
+    mark <- function(cut) if (marked) ifelse(cut, "*", " ") else ""
+    lower <- glue::glue("{tc_fmt(lo, digits)}{mark(lo_cut)}")
+    upper <- glue::glue("{tc_fmt(hi, digits)}{mark(hi_cut)}")
+    head <- glue::glue("{c('lower', 'upper')}{mark(FALSE)}")
+    width <- max(nchar(c(lower, upper, head)))
+    col <- function(v) formatC(v, width = width)
+    kinds <- c(if (any(lo_cut)) "minimum", if (any(hi_cut)) "maximum")
+    title <- if (box) "Region limits" else "Candidate range"
+    at_level <- if (!is.null(x$by)) glue::glue(", {x$by} = {lev}") else ""
+    c(
+      glue::glue("{title}{at_level}{units}"),
+      glue::glue("  {strrep(' ', nchar(lab_col[1]))}   {col(head[1])}   {col(head[2])}"),
+      glue::glue("  {lab_col}   {col(lower)}   {col(upper)}"),
+      if (marked) {
+        glue::glue("  * the part's observed {glue::glue_collapse(kinds, sep = ' or ')}")
       }
-      clip <- glue::glue("\n  {clip}", .trim = FALSE)
-    }
-  }
-  print(glue::glue("
-<optimal_comp> Goldilocks-zone search over {glue::glue_collapse(labs, sep = ', ')} (total = {tc_with_units(x$total, x$units)})
-  Region: {region}{grid}{limits}{clip}
-  Scale: {scale}
-  Zone rule: {glue::glue_collapse(rules, sep = '; ')}
-"))
+    )
+  })
   strata <- if (is.null(x$by)) list(NULL) else as.list(names(x$n_candidates))
-  for (lev in strata) {
+  results <- purrr::map(strata, function(lev) {
     zones <- x$zones
     optimum <- x$optimum
     if (!is.null(lev)) {
       zones <- zones[zones[[x$by]] == lev, ]
       optimum <- optimum[optimum[[x$by]] == lev, ]
-      cat("\n")
-      print(glue::glue("{x$by} = {lev}"))
     }
     n_cand <- x$n_candidates[[if (is.null(lev)) 1 else lev]]
-    print(glue::glue("  {format(n_cand, big.mark = ',')} candidate compositions inside the region"))
     # A widened level says so once, above the zones it widened.
     used <- x$zone_used[[if (is.null(lev)) 1 else lev]]
     best <- format(100 * (1 - used))
-    if (used < x$zone) {
+    widened <- if (used < x$zone) {
       whose <- if (is.null(x$threshold)) {
         "each outcome's predictions"
       } else {
         "the predictions of each outcome ruled by zone"
       }
-      print(glue::glue(
-        "  No candidate is in every zone at zone = {x$zone}; the zones are widened to zone = {used}, the best {best}% of {whose}"
+      wrap(glue::glue(
+        "No candidate is in every zone at zone = {x$zone}; the zones are widened to zone = {used}, the best {best}% of {whose}"
       ))
     }
-    for (k in c(x$outcomes, if (length(x$outcomes) > 1) "overall")) {
+    level <- if (!is.null(lev)) {
+      c(glue::glue("{x$by} = {lev}: {count(n_cand)} candidates"), widened)
+    } else if (!is.null(widened)) {
+      c("Zones", widened)
+    }
+    blocks <- purrr::map(c(x$outcomes, if (length(x$outcomes) > 1) "overall"), function(k) {
       z <- zones[zones$outcome == k, ]
       head_line <- if (k == "overall" && used < x$zone) {
         glue::glue("Overall zone, widened to the best {best}%")
@@ -1173,13 +1191,10 @@ print.optimal_comp <- function(x, ...) {
         } else {
           "empty"
         }
-        print(glue::glue("  {head_line}: {line}"))
-        next
+        return(glue::glue("{head_line}: {line}"))
       }
-      units <- if (!is.null(x$units)) glue::glue(", {x$units}") else ""
-      value <- function(s) tc_fmt(unlist(z[paste0(s, "_", x$parts)]), digits)
-      print(glue::glue("  {head_line}: {z$n} compositions (centre [min; max]{units})"))
-      print(glue::glue("    {format(labs)}  {value('centre')} [{value('min')}; {value('max')}]"))
+      value <- function(s) right(tc_fmt(unlist(z[paste0(s, "_", x$parts)]), digits))
+      notes <- character()
       # A relative search's value at the centre is its gain, printed below.
       if (k != "overall" && !relative) {
         o <- optimum[optimum$outcome == k, ]
@@ -1190,36 +1205,57 @@ print.optimal_comp <- function(x, ...) {
         } else {
           "the zone centre"
         }
-        print(glue::glue(
-          "    Predicted {k} at {where}: {num(o$estimate)} [{num(o$conf.low)}; {num(o$conf.high)}]"
-        ))
+        notes <- c(notes, wrap(glue::glue(
+          "Predicted {k} at {where}: {num(o$estimate)} [{num(o$conf.low)}; {num(o$conf.high)}]"
+        )))
       }
       linear <- if (k == "overall") any(x$linear) else x$linear[[k]]
       if (linear) {
-        print(glue::glue(
-          "    A fit linear in the composition has no interior optimum: the zone is the edge of the region in the direction of benefit."
-        ))
-        print(glue::glue(
-          "    Refit with `curvature = TRUE` for a surface that can hold one."
-        ))
+        notes <- c(
+          notes,
+          wrap("A fit linear in the composition has no interior optimum: the zone is the edge of the region in the direction of benefit."),
+          wrap("Refit with `curvature = TRUE` for a surface that can hold one.")
+        )
       } else if (!is.na(z$on_boundary) && z$on_boundary > 0.5) {
-        print(glue::glue(
-          "    {round(100 * z$on_boundary)}% of the zone lies near the edge of the region (its outer shell); the best composition may lie beyond it."
-        ))
+        notes <- c(notes, wrap(glue::glue(
+          "{round(100 * z$on_boundary)}% of the zone lies near the edge of the region (its outer shell); the best composition may lie beyond it."
+        )))
       }
-    }
+      c(
+        glue::glue("{head_line}: {count(z$n)} compositions (centre [min; max])"),
+        glue::glue("  {lab_col}   {value('centre')}  [{value('min')}; {value('max')}]"),
+        notes
+      )
+    })
     to_name <- if (optimum$centre_of[1] == "overall") {
       "the zone centre"
     } else {
       "each outcome's own centre"
     }
-    print(glue::glue(
-      "  Gain from {from_name} to {to_name} ({100 * x$conf_level}% CI):"
-    ))
-    print(glue::glue(
-      "    {optimum$outcome}: {x$measures[optimum$outcome]} {num(optimum$gain)} [{num(optimum$gain.low)}; {num(optimum$gain.high)}], p = {format.pval(optimum$p.value, digits = 3)}"
-    ))
-  }
+    measure <- purrr::map_chr(optimum$outcome, function(k) x$measures[[k]])
+    p <- format.pval(optimum$p.value, digits = 3)
+    p <- ifelse(startsWith(p, "<"), glue::glue("p < {sub('^< *', '', p)}"), glue::glue("p = {p}"))
+    gain <- c(
+      glue::glue("Gain from {from_name} to {to_name} ({100 * x$conf_level}% CI)"),
+      glue::glue(
+        "  {format(optimum$outcome)}   {format(measure)}   {right(num(optimum$gain))}  ",
+        "{format(glue::glue('[{num(optimum$gain.low)}; {num(optimum$gain.high)}]'))}  {p}"
+      )
+    )
+    c(list(level), blocks, list(gain))
+  })
+  sections <- purrr::compact(c(
+    list(glue::glue(
+      "<optimal_comp> Goldilocks-zone search: {glue::glue_collapse(x$outcomes, sep = ', ')}"
+    )),
+    list(search),
+    limits,
+    purrr::list_flatten(results)
+  ))
+  # One blank line between sections, and no blank at the end of a line (the
+  # space that stands for an absent mark in the last column).
+  lines <- unlist(purrr::map(sections, function(s) c("", as.character(s))))[-1]
+  print(glue::glue_collapse(sub(" +$", "", lines), sep = "\n"))
   invisible(x)
 }
 

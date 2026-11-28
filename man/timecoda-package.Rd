@@ -23,13 +23,9 @@ Useful links:
 Authors:
 \itemize{
   \item Marcus V. V. Lopes \email{mveber@cheo.on.ca} (\href{https://orcid.org/0000-0002-7968-5211}{ORCID}) [copyright holder]
-}
-
-Other contributors:
-\itemize{
-  \item Willen R. Tozetto \email{WTozetto@cheo.on.ca} [contributor]
-  \item Ricardo de Camargo \email{ricardo.de.camargo@hotmail.com} [contributor]
-  \item Kai Zhang \email{KZhang@cheo.on.ca} [contributor]
+  \item Willen R. Tozetto \email{WTozetto@cheo.on.ca} (\href{https://orcid.org/0000-0001-8856-1678}{ORCID})
+  \item Ricardo de Camargo \email{ricardo.de.camargo@hotmail.com}
+  \item Kai Zhang \email{KZhang@cheo.on.ca}
 }
 
 }

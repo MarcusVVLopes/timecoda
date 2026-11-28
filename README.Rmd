@@ -11,81 +11,104 @@ output: github_document
 [![Lifecycle: stable](https://img.shields.io/badge/lifecycle-stable-brightgreen.svg)](https://lifecycle.r-lib.org/articles/stages.html#stable)
 <!-- badges: end -->
 
-`timecoda` is an R package for implementing current methods of time-use
-epidemiology, in particular compositional data analysis applied to behavioural
-data.
+`timecoda` implements compositional data analysis (CoDA) workflows for time-use
+epidemiology in R. It provides a consistent interface for declaring and
+screening compositions, fitting regression models on isometric log-ratio (ILR)
+coordinates, estimating isotemporal time reallocations, and searching for
+optimal compositions ("Goldilocks zones").
 
-The framework behind the package comes from a series of publications. Together
-they set out the definitions, concepts, statistical methods and research areas
-of time-use epidemiology (Pedišić, 2014; Pedišić et al., 2017; Dumuid, Stanford,
+The statistical framework draws on the foundational time-use epidemiology
+literature (Pedišić, 2014; Pedišić et al., 2017; Dumuid, Stanford,
 Martín-Fernández, et al., 2018; Dumuid, Stanford, Pedišić, et al., 2018; Dumuid
-et al., 2019, 2020). For further information on the topic, see the
-[International Network of Time-Use Epidemiologists
-(INTUE)](https://www.intue.org/).
+et al., 2019, 2020). For more on the field, visit the [International Network of
+Time-Use Epidemiologists (INTUE)](https://www.intue.org/).
 
 ## Installation
 
-`timecoda` needs R 4.4.0 or newer. To install it from GitHub, use the `pak`
-package:
+`timecoda` requires R 4.4.0 or newer. Install the development version from
+GitHub with `pak`:
 
-``` r
+```r
 install.packages("pak")
 pak::pak("MarcusVVLopes/timecoda")
 ```
 
-To install all the suggested packages for optional features, run the same call
-with `dependencies = TRUE`.
+To install suggested packages for optional features (such as `gt` tables,
+`DHARMa` diagnostics, and multilevel or robust model engines):
 
-``` r
+```r
 pak::pak("MarcusVVLopes/timecoda", dependencies = TRUE)
+```
+
+## Quick example
+
+Using the bundled `timeuse` dataset, a typical analysis declares the daily
+composition, fits a compositional regression model, and translates the ILR
+estimates into minute-based time reallocations:
+
+```r
+library(timecoda)
+
+cd <- declare_composition(
+  data    = timeuse,
+  parts   = c("MVPA", "LPA", "SB", "SPT"),
+  closure = 1440
+)
+
+fit_ob <- comp_iv(
+  comp    = cd,
+  outcome = "obesity",
+  model   = "glm",
+  family  = "binomial"
+)
+
+summary(object = fit_ob)
+predict_realloc(object = fit_ob, from = "SB", to = "MVPA", delta = 15)
 ```
 
 ## Getting started
 
-For a brief tutorial using the bundled `timeuse` data, see
-[Getting started with timecoda](https://marcusvvlopes.github.io/timecoda/articles/timecoda.html).
+For an end-to-end walkthrough on the `timeuse` dataset, start with [Getting
+started with timecoda](https://marcusvvlopes.github.io/timecoda/articles/timecoda.html).
+Function documentation is available on the [package
+website](https://marcusvvlopes.github.io/timecoda/), alongside topic-specific
+articles:
 
-To find the reference pages, check the
-[package website](https://marcusvvlopes.github.io/timecoda/). For the other
-articles, see the list below:
-
-- [Working with a compositional variable](https://marcusvvlopes.github.io/timecoda/articles/composition-variable.html)
-- [Modelling an outcome from a composition](https://marcusvvlopes.github.io/timecoda/articles/composition-predictor.html)
-- [Predicting time reallocations](https://marcusvvlopes.github.io/timecoda/articles/predicting-reallocations.html)
-- [Advanced model engines and the formula interface](https://marcusvvlopes.github.io/timecoda/articles/advanced-models.html)
-- [Finding the Goldilocks zone](https://marcusvvlopes.github.io/timecoda/articles/optimal-composition.html)
+- [Working with a compositional variable](https://marcusvvlopes.github.io/timecoda/articles/composition-variable.html) — validating compositions, imputing zeroes, flagging outliers, and descriptive plots.
+- [Modelling an outcome from a composition](https://marcusvvlopes.github.io/timecoda/articles/composition-predictor.html) — fitting ILR regression models with `comp_iv()`, checking diagnostics, and plotting response surfaces.
+- [Predicting time reallocations](https://marcusvvlopes.github.io/timecoda/articles/predicting-reallocations.html) — pairwise, one-to-all, and custom reallocations, subgroup moderation, and transfer curves.
+- [Finding the Goldilocks zone](https://marcusvvlopes.github.io/timecoda/articles/optimal-composition.html) — single- and multi-outcome optimization over feasible compositions.
+- [Advanced model engines and the formula interface](https://marcusvvlopes.github.io/timecoda/articles/advanced-models.html) — multilevel, survival, ordinal, multinomial, and robust engines, plus custom `ilr()` formulas and varying-total compositions.
 
 ## Getting help and contributing
 
-To ask a question or report a bug, use the [issue
-tracker](https://github.com/MarcusVVLopes/timecoda/issues). Before you write any
-code for a new feature, discuss it in an issue. For instructions on proposing a
-change, see the [contributing
-guide](https://github.com/MarcusVVLopes/timecoda/blob/main/.github/CONTRIBUTING.md),
-and follow the [code of
-conduct](https://github.com/MarcusVVLopes/timecoda/blob/main/.github/CODE_OF_CONDUCT.md)
-when you contribute.
+To ask a question or report a bug, open an issue on the [issue
+tracker](https://github.com/MarcusVVLopes/timecoda/issues). Before writing code
+for a new feature, please discuss it in an issue first. See the [contributing
+guide](https://github.com/MarcusVVLopes/timecoda/blob/main/.github/CONTRIBUTING.md)
+for workflow instructions, and note that participation is governed by the [code
+of conduct](https://github.com/MarcusVVLopes/timecoda/blob/main/.github/CODE_OF_CONDUCT.md).
 
 ## Development
 
-The developers specify the statistical methods and write the first
-implementation of each feature. Before release, each statistical method is
-benchmarked against established R packages (such as `robCompositions`,
-`compositions` and `codaredistlm`), hand-fitted models or published results.
-These benchmarks are part of the package's tests
-(`tests/testthat/test-benchmark-*.R`), so anyone can rerun them.
+We build `timecoda` around verifiable statistical accuracy and transparent
+development practices. We specify all statistical methods ourselves and
+benchmark each estimator before release against established R packages (such
+as `robCompositions`, `compositions`, and `codaredistlm`), hand-fitted models,
+or published results. These benchmarks live in
+`tests/testthat/test-benchmark-*.R`, so anyone can inspect and rerun them.
 
-AI tools (Claude, by Anthropic) help with documentation, tests, code review and
-refactoring. The developers review everything these tools produce and remain
-responsible for the package.
+We also use AI tools to assist with documentation, unit tests, code review, and
+refactoring. We review, test, and take full responsibility for everything
+shipped in the package.
 
 ## Citation
 
 To cite `timecoda`, run `citation("timecoda")`:
 
-> Lopes MVV, Tozetto WR, de Camargo R, Zhang K (2026). timecoda: Compositional
-> Data Analysis for Time-Use Behaviour Research. R package version 0.6.0,
-> <https://github.com/MarcusVVLopes/timecoda>.
+> Lopes MVV, Tozetto WR, de Camargo R, Zhang K (2026). timecoda:
+> Compositional Data Analysis for Time-Use Behaviour Research. R package
+> version 0.6.1, <https://github.com/MarcusVVLopes/timecoda>.
 
 ## Licence
 
@@ -95,12 +118,12 @@ any later version. For the full text, see
 
 ## References
 
-Dumuid, D., Stanford, T. E., Martín-Fernández, J. A., Pedišić, Ž., Maher,
-C. A., Lewis, L. K., Hron, K., Katzmarzyk, P. T., Chaput, J. P., Fogelholm,
-M., Hu, G., Lambert, E. V., Maia, J., Sarmiento, O. L., Standage, M.,
-Barreira, T. V., Broyles, S. T., Tudor-Locke, C., Tremblay, M. S., & Olds, T.
-(2018). Compositional data analysis for physical activity, sedentary time and
-sleep research. *Statistical Methods in Medical Research*, 27, 3726-3738.
+Dumuid, D., Stanford, T. E., Martín-Fernández, J. A., Pedišić, Ž., Maher, C.
+A., Lewis, L. K., Hron, K., Katzmarzyk, P. T., Chaput, J. P., Fogelholm, M.,
+Hu, G., Lambert, E. V., Maia, J., Sarmiento, O. L., Standage, M., Barreira, T.
+V., Broyles, S. T., Tudor-Locke, C., Tremblay, M. S., & Olds, T. (2018).
+Compositional data analysis for physical activity, sedentary time and sleep
+research. *Statistical Methods in Medical Research*, 27, 3726-3738.
 <https://doi.org/10.1177/0962280217710835>
 
 Dumuid, D., Stanford, T. E., Pedišić, Ž., Maher, C., Lewis, L. K.,
