@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">timecoda</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.6.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.6.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,39 +70,24 @@
       <h1>Finding the Goldilocks zone</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/MarcusVVLopes/timecoda/blob/v0.6.0/vignettes/optimal-composition.Rmd" class="external-link"><code>vignettes/optimal-composition.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/MarcusVVLopes/timecoda/blob/main/vignettes/optimal-composition.Rmd" class="external-link"><code>vignettes/optimal-composition.Rmd</code></a></small>
       <div class="d-none name"><code>optimal-composition.Rmd</code></div>
     </div>
 
     
     
+<p>A Goldilocks zone is the set of daily time-use compositions yielding
+the best predicted values of one or more health outcomes, summarized by
+its closed geometric mean as the optimal composition (Dumuid et al.,
+2021). Because a model that is purely linear in ILR coordinates has no
+interior optimum, we fit models with
+<code>curvature = TRUE</code>—equivalent to the full quadratic formula
+<code>ilr()^2 + I(ilr()^2)</code> in
+<code><a href="../articles/advanced-models.html">vignette("advanced-models", package = "timecoda")</a></code>.</p>
+<p>The <code>timeuse</code> data are simulated, so the zones below
+illustrate the computation rather than substantive guidelines.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://marcusvvlopes.github.io/timecoda/">timecoda</a></span><span class="op">)</span></span></code></pre></div>
-<p><code><a href="../reference/optimal_composition.html">optimal_composition()</a></code> searches a fitted model for the
-compositions with the best predicted outcome. The search has seven
-steps.</p>
-<p><img src="goldilocks-pipeline.svg" class="r-plt" alt="Flowchart of the optimal_composition() pipeline: one comp_iv fit, or one fit per outcome, enters; the feasible region is estimated from the sample's compositions, as a per-part box by default, the observed compositions or a data frame; candidate compositions are placed on a grid in closure units inside the region, by default every 10 minutes of a 1,440-minute day; each outcome is predicted at every candidate on a few emmeans grids; each outcome's zone keeps the best share of its predictions, or those meeting a threshold; with several outcomes the zones are intersected, and widened only with widen = TRUE; each zone is summarized by its closed geometric mean and per-part range; and the prediction at the zone centre is contrasted with the reference day as the gain. The result is an optimal_comp object read by print() and plot()." width="82%"></p>
-<div class="section level2">
-<h2 id="the-question-the-search-answers">The question the search answers<a class="anchor" aria-label="anchor" href="#the-question-the-search-answers"></a>
-</h2>
-<p>A Goldilocks zone is the set of daily compositions with the best
-predicted values of a health outcome, and the optimal composition is the
-centre of that set. Dumuid et al. (2021) evaluated every composition on
-a 10-minute grid inside a per-part box around the sample mean, kept the
-best 5% of the predictions as each outcome’s zone, and took the
-compositional centre of the zones’ overlap.</p>
-<p><code><a href="../reference/optimal_composition.html">optimal_composition()</a></code> searches the same kind of grid,
-and because the candidates are fixed, a repeated search of the same fit
-returns the same centre. The region and the grid are the same whatever
-the order of the parts.</p>
-</div>
-<div class="section level2">
-<h2 id="the-example-data-and-the-two-fits">The example data and the two fits<a class="anchor" aria-label="anchor" href="#the-example-data-and-the-two-fits"></a>
-</h2>
-<p>The examples use the bundled <code>timeuse</code> data, described in
-<code><a href="../articles/composition-variable.html">vignette("composition-variable", package = "timecoda")</a></code>.
-Because the data are simulated, the zones illustrate the computation and
-have no substantive interpretation.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cd</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/declare_composition.html">declare_composition</a></span><span class="op">(</span></span>
 <span>  data    <span class="op">=</span> <span class="va">timeuse</span>,</span>
@@ -116,30 +101,19 @@ have no substantive interpretation.</p>
 <span>    SPT  <span class="op">=</span> <span class="st">"Sleep"</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>A model whose linear predictor is linear in the isometric log-ratio
-(ILR) coordinates has no interior optimum. To find a Goldilocks zone
-inside the region, you need a fit that curves in the composition.</p>
-<p><code>fit_bmi</code> is a linear model of the body-mass-index z-score
-(<code>zbmi</code>) and <code>fit_ob</code> a logistic regression of the
-obesity indicator (<code>obesity</code>), each adjusted for sex. Both
-are fitted with <code>curvature = TRUE</code>, which writes the full
-quadratic in the coordinates, so each equals the fit of the formula
-<code>ilr()^2 + I(ilr()^2)</code> shown in
-<code><a href="../articles/advanced-models.html">vignette("advanced-models", package = "timecoda")</a></code>.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_bmi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/comp_iv.html">comp_iv</a></span><span class="op">(</span>comp <span class="op">=</span> <span class="va">cd</span>, outcome <span class="op">=</span> <span class="st">"zbmi"</span>, model <span class="op">=</span> <span class="st">"lm"</span>,</span>
 <span>                   covariates <span class="op">=</span> <span class="st">"sex"</span>, curvature <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">fit_ob</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/comp_iv.html">comp_iv</a></span><span class="op">(</span>comp <span class="op">=</span> <span class="va">cd</span>, outcome <span class="op">=</span> <span class="st">"obesity"</span>, model <span class="op">=</span> <span class="st">"glm"</span>,</span>
 <span>                   family <span class="op">=</span> <span class="st">"binomial"</span>, covariates <span class="op">=</span> <span class="st">"sex"</span>, curvature <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-</div>
 <div class="section level2">
-<h2 id="part-1--one-complete-call">Part 1. One complete call<a class="anchor" aria-label="anchor" href="#part-1--one-complete-call"></a>
+<h2 id="searching-a-single-outcome">Searching a single outcome<a class="anchor" aria-label="anchor" href="#searching-a-single-outcome"></a>
 </h2>
-<p>A lower z-BMI is the better outcome, so search <code>fit_bmi</code>
-with <code>direction = "min"</code>. The other five arguments are
-written at the values a default call uses for this 1,440-minute
-composition (i.e., the box of the mean plus or minus 3 SD, on a
-10-minute grid).</p>
+<p>Since lower <code>zbmi</code> is better, we search
+<code>fit_bmi</code> with <code>direction = "min"</code>. The remaining
+arguments below are written out at their defaults for a 1,440-minute day
+(a per-part box of mean <span class="math inline">\pm 3</span> SD,
+10-minute grid spacing, top 5% of predictions):</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">opt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/optimal_composition.html">optimal_composition</a></span><span class="op">(</span></span>
 <span>  object    <span class="op">=</span> <span class="va">fit_bmi</span>,</span>
@@ -151,470 +125,585 @@ composition (i.e., the box of the mean plus or minus 3 SD, on a
 <span>  type      <span class="op">=</span> <span class="st">"relative"</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">opt</span></span>
-<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search over Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep (total = 1440 min/day)</span></span>
-<span><span class="co">#&gt;   Region: per-part box of the mean +/- 3 SD; candidates on multiples of 10 min/day</span></span>
-<span><span class="co">#&gt;   Limits: MVPA 0.1 to 180.0 min/day, LPA 51.8 to 503.3 min/day, SB 315.6 to 1013.4 min/day, SPT 239.9 to 809.4 min/day</span></span>
-<span><span class="co">#&gt;   4 of 8 box limits are the observed minimum or maximum of their part (lower: MVPA, LPA, SB, SPT)</span></span>
-<span><span class="co">#&gt;   Scale: Mean difference versus the reference day</span></span>
-<span><span class="co">#&gt;   Zone rule: zbmi, the best 5% of predictions (lower is better)</span></span>
-<span><span class="co">#&gt;   36,611 candidate compositions inside the region</span></span>
-<span><span class="co">#&gt;   Zone for zbmi: 1831 compositions (centre [min; max], min/day)</span></span>
-<span><span class="co">#&gt;     Moderate-to-vigorous PA  125.2 [30.0; 170.0]</span></span>
-<span><span class="co">#&gt;     Light PA                 267.2 [110.0; 480.0]</span></span>
-<span><span class="co">#&gt;     Sedentary behaviour      353.9 [320.0; 410.0]</span></span>
-<span><span class="co">#&gt;     Sleep                    693.6 [470.0; 800.0]</span></span>
-<span><span class="co">#&gt;   Gain from the reference day to the zone centre (95% CI):</span></span>
-<span><span class="co">#&gt;     zbmi: Mean difference -2.54 [-3.2; -1.88], p = 5.44e-13</span></span></code></pre></div>
-<p>The centre of a zone is the closed geometric mean of its
-compositions, and the brackets give the smallest and largest value of
-each part among them. Under the default <code>type = "relative"</code>,
-each candidate is valued by its mean difference in z-BMI from the
-reference day (the <code>Scale</code> line), and the reference day is
-the reference composition described in
-<code><a href="../articles/predicting-reallocations.html">vignette("predicting-reallocations", package = "timecoda")</a></code>.</p>
-<p>The gain is the contrast between the zone centre and the reference
-day, averaged over sex as in the reference grid of
-<code><a href="../reference/predict_realloc.html">predict_realloc()</a></code>. At the centre, the predicted z-BMI is
-2.54 lower. The gain’s confidence interval is conditional on the centre,
-and the location of the zone has no interval of its own (see
-<code><a href="../reference/optimal_composition.html">?optimal_composition</a></code>).</p>
-<p>When more than half of the zone’s compositions lie in the outer shell
-of the region (i.e., with a part within one <code>spacing</code> of its
-limit), a further line appears under the zone and states that the best
-composition may lie beyond the edge of the region.</p>
+<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search: zbmi</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Search</span></span>
+<span><span class="co">#&gt;   Parts       Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep</span></span>
+<span><span class="co">#&gt;               (total = 1440 min/day)</span></span>
+<span><span class="co">#&gt;   Region      per-part box of the mean +/- 3 SD</span></span>
+<span><span class="co">#&gt;   Grid        multiples of 10 min/day; 36,611 candidates</span></span>
+<span><span class="co">#&gt;   Scale       Mean difference versus the reference day</span></span>
+<span><span class="co">#&gt;   Zone rule   best 5% of predictions, lower is better</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Region limits (min/day)</span></span>
+<span><span class="co">#&gt;                              lower     upper</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA      0.1*    180.0</span></span>
+<span><span class="co">#&gt;   Light PA                    51.8*    503.3</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour        315.6*   1013.4</span></span>
+<span><span class="co">#&gt;   Sleep                      239.9*    809.4</span></span>
+<span><span class="co">#&gt;   * the part's observed minimum</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Zone for zbmi: 1,831 compositions (centre [min; max])</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA   125.2  [ 30.0; 170.0]</span></span>
+<span><span class="co">#&gt;   Light PA                  267.2  [110.0; 480.0]</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour       353.9  [320.0; 410.0]</span></span>
+<span><span class="co">#&gt;   Sleep                     693.6  [470.0; 800.0]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Gain from the reference day to the zone centre (95% CI)</span></span>
+<span><span class="co">#&gt;   zbmi   Mean difference   -2.54  [-3.2; -1.88]  p = 5.44e-13</span></span></code></pre></div>
+<p>The zone centre is the closed geometric mean of the winning
+compositions, with their per-part min–max ranges in brackets. At this
+centre, predicted <code>zbmi</code> is 2.54 units lower than at the
+sample reference day (averaged over sex, as in
+<code><a href="../reference/predict_realloc.html">predict_realloc()</a></code>). Note that the gain’s confidence
+interval is conditional on the estimated centre; the zone location
+itself has no confidence interval (see
+<code><a href="../reference/optimal_composition.html">?optimal_composition</a></code>). Whenever more than half of the zone
+sits within one <code>spacing</code> step of the region boundary, an
+extra warning line flags that the true optimum may lie outside the
+searched box.</p>
+<p>Because the candidate grid is deterministic and order-invariant,
+repeated searches on the same fit always return the same centre. The
+steps of the search are:</p>
+<p><img src="goldilocks-pipeline.svg" class="r-plt" alt="Flowchart of the optimal_composition() pipeline: one comp_iv fit, or one fit per outcome, enters; the feasible region is estimated from the sample's compositions, as a per-part box by default, the observed compositions or a data frame; candidate compositions are placed on a grid in closure units inside the region, by default every 10 minutes of a 1,440-minute day; each outcome is predicted at every candidate on a few emmeans grids; each outcome's zone keeps the best share of its predictions, or those meeting a threshold; with several outcomes the zones are intersected, and widened only with widen = TRUE; each zone is summarized by its closed geometric mean and per-part range; and the prediction at the zone centre is contrasted with the reference day as the gain. The result is an optimal_comp object read by print() and plot()." width="82%"></p>
 </div>
 <div class="section level2">
-<h2 id="part-2--the-arguments-in-turn">Part 2. The arguments in turn<a class="anchor" aria-label="anchor" href="#part-2--the-arguments-in-turn"></a>
+<h2 id="constraining-the-search-region-and-grid">Constraining the search region and grid<a class="anchor" aria-label="anchor" href="#constraining-the-search-region-and-grid"></a>
 </h2>
-<div class="section level3">
-<h3 id="the-region">The region<a class="anchor" aria-label="anchor" href="#the-region"></a>
-</h3>
-<p>The search is confined to a feasible region, which you choose with
-<code>region</code> (for the choices, see
-<code><a href="../reference/optimal_composition.html">?optimal_composition</a></code>). The default <code>"box"</code>
-limits each part separately, on the closure scale, to its mean plus or
-minus <code>sd</code> standard deviations (3 by default, as in Dumuid et
-al., 2021). Such a limit never extends beyond the part’s observed range
-in this package, and the limits cut to that range are counted in the
-printed result.</p>
-<p>To set the limits of the box by each part’s quantiles in place of
-<code>sd</code>, use <code>coverage</code>. Brakenridge et al. (2024)
-limited each part to its 1st and 99th percentiles.</p>
+<p>By default, <code>region = "box"</code> bounds each part to its mean
+<span class="math inline">\pm 3</span> SD (Dumuid et al., 2021), clipped
+to the observed range so candidates never extrapolate past the data. You
+can replace SD limits with empirical quantiles via
+<code>coverage</code>—for example, the 1st and 99th percentiles used by
+Brakenridge et al. (2024):</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/optimal_composition.html">optimal_composition</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_bmi</span>, direction <span class="op">=</span> <span class="st">"min"</span>,</span>
 <span>                    coverage <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.01</span>, <span class="fl">0.99</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search over Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep (total = 1440 min/day)</span></span>
-<span><span class="co">#&gt;   Region: per-part box from the 1st to the 99th percentile; candidates on multiples of 10 min/day</span></span>
-<span><span class="co">#&gt;   Limits: MVPA 1.2 to 199.0 min/day, LPA 68.0 to 422.0 min/day, SB 390.9 to 925.0 min/day, SPT 255.4 to 739.9 min/day</span></span>
-<span><span class="co">#&gt;   Scale: Mean difference versus the reference day</span></span>
-<span><span class="co">#&gt;   Zone rule: zbmi, the best 5% of predictions (lower is better)</span></span>
-<span><span class="co">#&gt;   27,018 candidate compositions inside the region</span></span>
-<span><span class="co">#&gt;   Zone for zbmi: 1351 compositions (centre [min; max], min/day)</span></span>
-<span><span class="co">#&gt;     Moderate-to-vigorous PA  150.4 [60.0; 190.0]</span></span>
-<span><span class="co">#&gt;     Light PA                 242.6 [100.0; 420.0]</span></span>
-<span><span class="co">#&gt;     Sedentary behaviour      428.9 [400.0; 480.0]</span></span>
-<span><span class="co">#&gt;     Sleep                    618.0 [430.0; 730.0]</span></span>
-<span><span class="co">#&gt;   Gain from the reference day to the zone centre (95% CI):</span></span>
-<span><span class="co">#&gt;     zbmi: Mean difference -2.07 [-2.52; -1.63], p = &lt;2e-16</span></span></code></pre></div>
-<p>To search the compositions of the sample, set
-<code>region = "observed"</code>. The 300 compositions of the sample are
-then the candidates in place of the grid, as in Lund Rasmussen et
-al. (2023).</p>
+<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search: zbmi</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Search</span></span>
+<span><span class="co">#&gt;   Parts       Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep</span></span>
+<span><span class="co">#&gt;               (total = 1440 min/day)</span></span>
+<span><span class="co">#&gt;   Region      per-part box from the 1st to the 99th percentile</span></span>
+<span><span class="co">#&gt;   Grid        multiples of 10 min/day; 27,018 candidates</span></span>
+<span><span class="co">#&gt;   Scale       Mean difference versus the reference day</span></span>
+<span><span class="co">#&gt;   Zone rule   best 5% of predictions, lower is better</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Region limits (min/day)</span></span>
+<span><span class="co">#&gt;                             lower   upper</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA     1.2   199.0</span></span>
+<span><span class="co">#&gt;   Light PA                   68.0   422.0</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour       390.9   925.0</span></span>
+<span><span class="co">#&gt;   Sleep                     255.4   739.9</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Zone for zbmi: 1,351 compositions (centre [min; max])</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA   150.4  [ 60.0; 190.0]</span></span>
+<span><span class="co">#&gt;   Light PA                  242.6  [100.0; 420.0]</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour       428.9  [400.0; 480.0]</span></span>
+<span><span class="co">#&gt;   Sleep                     618.0  [430.0; 730.0]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Gain from the reference day to the zone centre (95% CI)</span></span>
+<span><span class="co">#&gt;   zbmi   Mean difference   -2.07  [-2.52; -1.63]  p &lt; 2e-16</span></span></code></pre></div>
+<p>Alternatively, you can evaluate only the observed participant
+compositions with <code>region = "observed"</code> (Lund Rasmussen et
+al., 2023), or pass a custom data frame of candidate compositions on the
+closure scale:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/optimal_composition.html">optimal_composition</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_bmi</span>, direction <span class="op">=</span> <span class="st">"min"</span>, region <span class="op">=</span> <span class="st">"observed"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search over Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep (total = 1440 min/day)</span></span>
-<span><span class="co">#&gt;   Region: the sample's own compositions</span></span>
-<span><span class="co">#&gt;   Candidates span: MVPA 0.1 to 240.0 min/day, LPA 51.8 to 504.3 min/day, SB 315.6 to 1036.9 min/day, SPT 239.9 to 815.2 min/day</span></span>
-<span><span class="co">#&gt;   Scale: Mean difference versus the reference day</span></span>
-<span><span class="co">#&gt;   Zone rule: zbmi, the best 5% of predictions (lower is better)</span></span>
-<span><span class="co">#&gt;   300 candidate compositions inside the region</span></span>
-<span><span class="co">#&gt;   Zone for zbmi: 16 compositions (centre [min; max], min/day)</span></span>
-<span><span class="co">#&gt;     Moderate-to-vigorous PA  112.2 [46.0; 240.0]</span></span>
-<span><span class="co">#&gt;     Light PA                 262.2 [185.3; 361.9]</span></span>
-<span><span class="co">#&gt;     Sedentary behaviour      454.0 [315.6; 552.0]</span></span>
-<span><span class="co">#&gt;     Sleep                    611.5 [447.7; 815.2]</span></span>
-<span><span class="co">#&gt;   Gain from the reference day to the zone centre (95% CI):</span></span>
-<span><span class="co">#&gt;     zbmi: Mean difference -1.77 [-2.12; -1.41], p = &lt;2e-16</span></span></code></pre></div>
-<p>You can also give a data frame of compositions on the closure scale
-as the region, with one column per part, and its rows are then the
-candidates.</p>
-</div>
-<div class="section level3">
-<h3 id="the-candidates">The candidates<a class="anchor" aria-label="anchor" href="#the-candidates"></a>
-</h3>
-<p>On the grid, each of the first three parts is a positive multiple of
-<code>spacing</code> minutes and the last part is the remainder. The
-default <code>spacing</code> is 1/144 of the total, which is the 10
-minutes of Dumuid et al. (2021) on a 1,440-minute day. A search takes
-longer as the number of candidates grows, and the call stops with an
-error when more than 1,000,000 lie inside the region. A coarser grid
-holds fewer candidates and gives a similar centre.</p>
+<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search: zbmi</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Search</span></span>
+<span><span class="co">#&gt;   Parts        Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep</span></span>
+<span><span class="co">#&gt;                (total = 1440 min/day)</span></span>
+<span><span class="co">#&gt;   Region       the sample's own compositions</span></span>
+<span><span class="co">#&gt;   Candidates   300</span></span>
+<span><span class="co">#&gt;   Scale        Mean difference versus the reference day</span></span>
+<span><span class="co">#&gt;   Zone rule    best 5% of predictions, lower is better</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Candidate range (min/day)</span></span>
+<span><span class="co">#&gt;                              lower    upper</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA      0.1    240.0</span></span>
+<span><span class="co">#&gt;   Light PA                    51.8    504.3</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour        315.6   1036.9</span></span>
+<span><span class="co">#&gt;   Sleep                      239.9    815.2</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Zone for zbmi: 16 compositions (centre [min; max])</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA   112.2  [ 46.0; 240.0]</span></span>
+<span><span class="co">#&gt;   Light PA                  262.2  [185.3; 361.9]</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour       454.0  [315.6; 552.0]</span></span>
+<span><span class="co">#&gt;   Sleep                     611.5  [447.7; 815.2]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Gain from the reference day to the zone centre (95% CI)</span></span>
+<span><span class="co">#&gt;   zbmi   Mean difference   -1.77  [-2.12; -1.41]  p &lt; 2e-16</span></span></code></pre></div>
+<p>On the default grid, the first <span class="math inline">D - 1</span>
+parts step in multiples of <code>spacing</code> (defaulting to <span class="math inline">1/144</span> of the closure, or 10 minutes for a
+1,440-minute day) and the last part takes the remainder. Searches stop
+with an error if the region holds more than 1,000,000 candidates. A
+coarser step speeds up the search with little change to the centre
+(119.0 vs. 125.2 minutes of <code>MVPA</code> here):</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/optimal_composition.html">optimal_composition</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_bmi</span>, direction <span class="op">=</span> <span class="st">"min"</span>, spacing <span class="op">=</span> <span class="fl">30</span><span class="op">)</span></span>
-<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search over Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep (total = 1440 min/day)</span></span>
-<span><span class="co">#&gt;   Region: per-part box of the mean +/- 3 SD; candidates on multiples of 30 min/day</span></span>
-<span><span class="co">#&gt;   Limits: MVPA 0.1 to 180.0 min/day, LPA 51.8 to 503.3 min/day, SB 315.6 to 1013.4 min/day, SPT 239.9 to 809.4 min/day</span></span>
-<span><span class="co">#&gt;   4 of 8 box limits are the observed minimum or maximum of their part (lower: MVPA, LPA, SB, SPT)</span></span>
-<span><span class="co">#&gt;   Scale: Mean difference versus the reference day</span></span>
-<span><span class="co">#&gt;   Zone rule: zbmi, the best 5% of predictions (lower is better)</span></span>
-<span><span class="co">#&gt;   1,220 candidate compositions inside the region</span></span>
-<span><span class="co">#&gt;   Zone for zbmi: 62 compositions (centre [min; max], min/day)</span></span>
-<span><span class="co">#&gt;     Moderate-to-vigorous PA  119.0 [60.0; 150.0]</span></span>
-<span><span class="co">#&gt;     Light PA                 276.5 [150.0; 450.0]</span></span>
-<span><span class="co">#&gt;     Sedentary behaviour      355.2 [330.0; 390.0]</span></span>
-<span><span class="co">#&gt;     Sleep                    689.3 [510.0; 780.0]</span></span>
-<span><span class="co">#&gt;     77% of the zone lies near the edge of the region (its outer shell); the best composition may lie beyond it.</span></span>
-<span><span class="co">#&gt;   Gain from the reference day to the zone centre (95% CI):</span></span>
-<span><span class="co">#&gt;     zbmi: Mean difference -2.5 [-3.15; -1.84], p = 6.01e-13</span></span></code></pre></div>
-<p>With 30-minute steps, the centre has 119.0 minutes of
-moderate-to-vigorous activity, against 125.2 with the default.</p>
+<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search: zbmi</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Search</span></span>
+<span><span class="co">#&gt;   Parts       Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep</span></span>
+<span><span class="co">#&gt;               (total = 1440 min/day)</span></span>
+<span><span class="co">#&gt;   Region      per-part box of the mean +/- 3 SD</span></span>
+<span><span class="co">#&gt;   Grid        multiples of 30 min/day; 1,220 candidates</span></span>
+<span><span class="co">#&gt;   Scale       Mean difference versus the reference day</span></span>
+<span><span class="co">#&gt;   Zone rule   best 5% of predictions, lower is better</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Region limits (min/day)</span></span>
+<span><span class="co">#&gt;                              lower     upper</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA      0.1*    180.0</span></span>
+<span><span class="co">#&gt;   Light PA                    51.8*    503.3</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour        315.6*   1013.4</span></span>
+<span><span class="co">#&gt;   Sleep                      239.9*    809.4</span></span>
+<span><span class="co">#&gt;   * the part's observed minimum</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Zone for zbmi: 62 compositions (centre [min; max])</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA   119.0  [ 60.0; 150.0]</span></span>
+<span><span class="co">#&gt;   Light PA                  276.5  [150.0; 450.0]</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour       355.2  [330.0; 390.0]</span></span>
+<span><span class="co">#&gt;   Sleep                     689.3  [510.0; 780.0]</span></span>
+<span><span class="co">#&gt;   77% of the zone lies near the edge of the region (its outer shell); the best</span></span>
+<span><span class="co">#&gt;   composition may lie beyond it.</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Gain from the reference day to the zone centre (95% CI)</span></span>
+<span><span class="co">#&gt;   zbmi   Mean difference   -2.5  [-3.15; -1.84]  p = 6.01e-13</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="the-zone-rule">The zone rule<a class="anchor" aria-label="anchor" href="#the-zone-rule"></a>
-</h3>
-<p>A candidate enters an outcome’s zone when its rank is at least
-<code>zone</code>, and you set with <code>direction</code> whether a
-higher (<code>"max"</code>, the default) or a lower (<code>"min"</code>)
-predicted outcome is better. The ranks are taken from the model’s linear
-predictor, so a zone ruled by <code>zone</code> is the same for both
-values of <code>type</code>.</p>
-<p>A zone can also be ruled by a value instead of a rank, as in the
-clinical cut-offs of Vindiš et al. (2025). For <code>threshold</code>,
-you give one number for a cut-off, met at or below it for
-<code>"min"</code>, or two numbers for a band, on the <code>type</code>
-scale. Under the default <code>type = "relative"</code>, a threshold is
-an effect versus <code>from</code>, which is a difference in z-BMI here
-and an odds ratio for the logistic fit. A cut-off on the z-BMI itself
-therefore needs <code>type = "absolute"</code>. With the cut-off at
--0.5, the centre of the zone lies closer to the reference day than the
-centre of Part 1.</p>
+<div class="section level2">
+<h2 id="defining-the-zone-and-baseline">Defining the zone and baseline<a class="anchor" aria-label="anchor" href="#defining-the-zone-and-baseline"></a>
+</h2>
+<p>By default, the zone keeps the top <span class="math inline">1 -
+\text{zone}</span> share of candidate compositions ranked in the desired
+<code>direction</code> (<code>"max"</code> by default, or
+<code>"min"</code> when lower predictions are better). Setting
+<code>zone = 0.95</code> keeps the best 5% of predictions; setting
+<code>zone = 0.15</code> keeps the best 85%—matching the
+healthy-adiposity rule of Lund Rasmussen et al. (2023), which retains
+all predictions below the 85th percentile:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/optimal_composition.html">optimal_composition</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_bmi</span>, direction <span class="op">=</span> <span class="st">"min"</span>, zone <span class="op">=</span> <span class="fl">0.15</span><span class="op">)</span></span>
+<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search: zbmi</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Search</span></span>
+<span><span class="co">#&gt;   Parts       Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep</span></span>
+<span><span class="co">#&gt;               (total = 1440 min/day)</span></span>
+<span><span class="co">#&gt;   Region      per-part box of the mean +/- 3 SD</span></span>
+<span><span class="co">#&gt;   Grid        multiples of 10 min/day; 36,611 candidates</span></span>
+<span><span class="co">#&gt;   Scale       Mean difference versus the reference day</span></span>
+<span><span class="co">#&gt;   Zone rule   best 85% of predictions, lower is better</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Region limits (min/day)</span></span>
+<span><span class="co">#&gt;                              lower     upper</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA      0.1*    180.0</span></span>
+<span><span class="co">#&gt;   Light PA                    51.8*    503.3</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour        315.6*   1013.4</span></span>
+<span><span class="co">#&gt;   Sleep                      239.9*    809.4</span></span>
+<span><span class="co">#&gt;   * the part's observed minimum</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Zone for zbmi: 31,120 compositions (centre [min; max])</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA    89.8  [ 10.0;  170.0]</span></span>
+<span><span class="co">#&gt;   Light PA                  250.6  [ 60.0;  500.0]</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour       591.0  [320.0; 1010.0]</span></span>
+<span><span class="co">#&gt;   Sleep                     508.6  [240.0;  800.0]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Gain from the reference day to the zone centre (95% CI)</span></span>
+<span><span class="co">#&gt;   zbmi   Mean difference   -0.987  [-1.15; -0.822]  p &lt; 2e-16</span></span></code></pre></div>
+<p>Because <code>type = "relative"</code> and
+<code>type = "absolute"</code> preserve the ordering of candidate
+predictions, a quantile-based zone contains the exact same compositions
+under either <code>type</code>.</p>
+<p>To define a zone by a clinical cut-off or band instead of a quantile
+(Vindiš et al., 2025), pass <code>threshold</code>. Cut-offs are
+evaluated on the <code>type</code> scale, so a threshold on
+<code>zbmi</code> itself requires <code>type = "absolute"</code>
+(whereas the default <code>type = "relative"</code> evaluates
+differences from <code>from</code>):</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/optimal_composition.html">optimal_composition</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_bmi</span>, direction <span class="op">=</span> <span class="st">"min"</span>, type <span class="op">=</span> <span class="st">"absolute"</span>,</span>
 <span>                    threshold <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>zbmi <span class="op">=</span> <span class="op">-</span><span class="fl">0.5</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search over Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep (total = 1440 min/day)</span></span>
-<span><span class="co">#&gt;   Region: per-part box of the mean +/- 3 SD; candidates on multiples of 10 min/day</span></span>
-<span><span class="co">#&gt;   Limits: MVPA 0.1 to 180.0 min/day, LPA 51.8 to 503.3 min/day, SB 315.6 to 1013.4 min/day, SPT 239.9 to 809.4 min/day</span></span>
-<span><span class="co">#&gt;   4 of 8 box limits are the observed minimum or maximum of their part (lower: MVPA, LPA, SB, SPT)</span></span>
-<span><span class="co">#&gt;   Scale: predicted response</span></span>
-<span><span class="co">#&gt;   Zone rule: zbmi, predicted response &lt;= -0.5</span></span>
-<span><span class="co">#&gt;   36,611 candidate compositions inside the region</span></span>
-<span><span class="co">#&gt;   Zone for zbmi: 23363 compositions (centre [min; max], min/day)</span></span>
-<span><span class="co">#&gt;     Moderate-to-vigorous PA  101.9 [10.0; 170.0]</span></span>
-<span><span class="co">#&gt;     Light PA                 268.0 [60.0; 500.0]</span></span>
-<span><span class="co">#&gt;     Sedentary behaviour      543.1 [320.0; 990.0]</span></span>
-<span><span class="co">#&gt;     Sleep                    527.0 [240.0; 800.0]</span></span>
-<span><span class="co">#&gt;     Predicted zbmi at the zone centre: -1.24 [-1.46; -1.02]</span></span>
-<span><span class="co">#&gt;   Gain from the reference day to the zone centre (95% CI):</span></span>
-<span><span class="co">#&gt;     zbmi: Mean difference -1.24 [-1.46; -1.02], p = &lt;2e-16</span></span></code></pre></div>
-<p>Lund Rasmussen et al. (2023) call a prediction healthy when it lies
-below the 85th percentile of all predictions. In this package, you write
-that rule as <code>direction = "min", zone = 0.15</code>. A candidate’s
-rank is the share of candidates whose prediction is no better than its
-own, so with a rank of at least 0.15 the 85% of candidates with the
-lowest predictions are kept.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/optimal_composition.html">optimal_composition</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_bmi</span>, direction <span class="op">=</span> <span class="st">"min"</span>, zone <span class="op">=</span> <span class="fl">0.15</span><span class="op">)</span></span>
-<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search over Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep (total = 1440 min/day)</span></span>
-<span><span class="co">#&gt;   Region: per-part box of the mean +/- 3 SD; candidates on multiples of 10 min/day</span></span>
-<span><span class="co">#&gt;   Limits: MVPA 0.1 to 180.0 min/day, LPA 51.8 to 503.3 min/day, SB 315.6 to 1013.4 min/day, SPT 239.9 to 809.4 min/day</span></span>
-<span><span class="co">#&gt;   4 of 8 box limits are the observed minimum or maximum of their part (lower: MVPA, LPA, SB, SPT)</span></span>
-<span><span class="co">#&gt;   Scale: Mean difference versus the reference day</span></span>
-<span><span class="co">#&gt;   Zone rule: zbmi, the best 85% of predictions (lower is better)</span></span>
-<span><span class="co">#&gt;   36,611 candidate compositions inside the region</span></span>
-<span><span class="co">#&gt;   Zone for zbmi: 31120 compositions (centre [min; max], min/day)</span></span>
-<span><span class="co">#&gt;     Moderate-to-vigorous PA  89.8 [10.0; 170.0]</span></span>
-<span><span class="co">#&gt;     Light PA                 250.6 [60.0; 500.0]</span></span>
-<span><span class="co">#&gt;     Sedentary behaviour      591.0 [320.0; 1010.0]</span></span>
-<span><span class="co">#&gt;     Sleep                    508.6 [240.0; 800.0]</span></span>
-<span><span class="co">#&gt;   Gain from the reference day to the zone centre (95% CI):</span></span>
-<span><span class="co">#&gt;     zbmi: Mean difference -0.987 [-1.15; -0.822], p = &lt;2e-16</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="several-outcomes">Several outcomes<a class="anchor" aria-label="anchor" href="#several-outcomes"></a>
-</h3>
-<p>When <code>object</code> is a list of fits, one per outcome, every
-outcome is searched on the same candidates, and you can give
-<code>direction</code> one value for all outcomes or one per
-outcome.</p>
+<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search: zbmi</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Search</span></span>
+<span><span class="co">#&gt;   Parts       Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep</span></span>
+<span><span class="co">#&gt;               (total = 1440 min/day)</span></span>
+<span><span class="co">#&gt;   Region      per-part box of the mean +/- 3 SD</span></span>
+<span><span class="co">#&gt;   Grid        multiples of 10 min/day; 36,611 candidates</span></span>
+<span><span class="co">#&gt;   Scale       predicted response</span></span>
+<span><span class="co">#&gt;   Zone rule   predicted response &lt;= -0.5</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Region limits (min/day)</span></span>
+<span><span class="co">#&gt;                              lower     upper</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA      0.1*    180.0</span></span>
+<span><span class="co">#&gt;   Light PA                    51.8*    503.3</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour        315.6*   1013.4</span></span>
+<span><span class="co">#&gt;   Sleep                      239.9*    809.4</span></span>
+<span><span class="co">#&gt;   * the part's observed minimum</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Zone for zbmi: 23,363 compositions (centre [min; max])</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA   101.9  [ 10.0; 170.0]</span></span>
+<span><span class="co">#&gt;   Light PA                  268.0  [ 60.0; 500.0]</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour       543.1  [320.0; 990.0]</span></span>
+<span><span class="co">#&gt;   Sleep                     527.0  [240.0; 800.0]</span></span>
+<span><span class="co">#&gt;   Predicted zbmi at the zone centre: -1.24 [-1.46; -1.02]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Gain from the reference day to the zone centre (95% CI)</span></span>
+<span><span class="co">#&gt;   zbmi   Mean difference   -1.24  [-1.46; -1.02]  p &lt; 2e-16</span></span></code></pre></div>
+<p>To measure the gain against a custom baseline day instead of the
+sample geometric mean, pass that day to <code>from</code> (which leaves
+the zone and centre unchanged, shifting only the contrast):</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/optimal_composition.html">optimal_composition</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_bmi</span>, direction <span class="op">=</span> <span class="st">"min"</span>,</span>
+<span>                    from <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>MVPA <span class="op">=</span> <span class="fl">30</span>, LPA <span class="op">=</span> <span class="fl">240</span>, SB <span class="op">=</span> <span class="fl">660</span>, SPT <span class="op">=</span> <span class="fl">510</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search: zbmi</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Search</span></span>
+<span><span class="co">#&gt;   Parts       Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep</span></span>
+<span><span class="co">#&gt;               (total = 1440 min/day)</span></span>
+<span><span class="co">#&gt;   Region      per-part box of the mean +/- 3 SD</span></span>
+<span><span class="co">#&gt;   Grid        multiples of 10 min/day; 36,611 candidates</span></span>
+<span><span class="co">#&gt;   Scale       Mean difference versus the given day</span></span>
+<span><span class="co">#&gt;   Zone rule   best 5% of predictions, lower is better</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Region limits (min/day)</span></span>
+<span><span class="co">#&gt;                              lower     upper</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA      0.1*    180.0</span></span>
+<span><span class="co">#&gt;   Light PA                    51.8*    503.3</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour        315.6*   1013.4</span></span>
+<span><span class="co">#&gt;   Sleep                      239.9*    809.4</span></span>
+<span><span class="co">#&gt;   * the part's observed minimum</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Zone for zbmi: 1,831 compositions (centre [min; max])</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA   125.2  [ 30.0; 170.0]</span></span>
+<span><span class="co">#&gt;   Light PA                  267.2  [110.0; 480.0]</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour       353.9  [320.0; 410.0]</span></span>
+<span><span class="co">#&gt;   Sleep                     693.6  [470.0; 800.0]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Gain from the given day to the zone centre (95% CI)</span></span>
+<span><span class="co">#&gt;   zbmi   Mean difference   -2.45  [-3.1; -1.79]  p = 2.2e-12</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="balancing-multiple-outcomes">Balancing multiple outcomes<a class="anchor" aria-label="anchor" href="#balancing-multiple-outcomes"></a>
+</h2>
+<p>To find compositions that perform well across several outcomes at
+once, pass a named list of fits (Dumuid et al., 2021; Duncan et al.,
+2024). All outcomes are scored on the same candidate grid, and
+<code>Overall zone</code> reports their intersection:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">opt2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/optimal_composition.html">optimal_composition</a></span><span class="op">(</span>object <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>zbmi <span class="op">=</span> <span class="va">fit_bmi</span>, obesity <span class="op">=</span> <span class="va">fit_ob</span><span class="op">)</span>,</span>
 <span>                            direction <span class="op">=</span> <span class="st">"min"</span><span class="op">)</span></span>
 <span><span class="va">opt2</span></span>
-<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search over Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep (total = 1440 min/day)</span></span>
-<span><span class="co">#&gt;   Region: per-part box of the mean +/- 3 SD; candidates on multiples of 10 min/day</span></span>
-<span><span class="co">#&gt;   Limits: MVPA 0.1 to 180.0 min/day, LPA 51.8 to 503.3 min/day, SB 315.6 to 1013.4 min/day, SPT 239.9 to 809.4 min/day</span></span>
-<span><span class="co">#&gt;   4 of 8 box limits are the observed minimum or maximum of their part (lower: MVPA, LPA, SB, SPT)</span></span>
-<span><span class="co">#&gt;   Scale: Mean difference (zbmi), Odds ratio (obesity) versus the reference day</span></span>
-<span><span class="co">#&gt;   Zone rule: zbmi, the best 5% of predictions (lower is better); obesity, the best 5% of predictions (lower is better)</span></span>
-<span><span class="co">#&gt;   36,611 candidate compositions inside the region</span></span>
-<span><span class="co">#&gt;   Zone for zbmi: 1831 compositions (centre [min; max], min/day)</span></span>
-<span><span class="co">#&gt;     Moderate-to-vigorous PA  125.2 [30.0; 170.0]</span></span>
-<span><span class="co">#&gt;     Light PA                 267.2 [110.0; 480.0]</span></span>
-<span><span class="co">#&gt;     Sedentary behaviour      353.9 [320.0; 410.0]</span></span>
-<span><span class="co">#&gt;     Sleep                    693.6 [470.0; 800.0]</span></span>
-<span><span class="co">#&gt;   Zone for obesity: 1831 compositions (centre [min; max], min/day)</span></span>
-<span><span class="co">#&gt;     Moderate-to-vigorous PA  136.9 [30.0; 170.0]</span></span>
-<span><span class="co">#&gt;     Light PA                 197.0 [60.0; 500.0]</span></span>
-<span><span class="co">#&gt;     Sedentary behaviour      549.2 [320.0; 830.0]</span></span>
-<span><span class="co">#&gt;     Sleep                    556.9 [240.0; 800.0]</span></span>
-<span><span class="co">#&gt;   Overall zone: 292 compositions (centre [min; max], min/day)</span></span>
-<span><span class="co">#&gt;     Moderate-to-vigorous PA  139.6 [70.0; 170.0]</span></span>
-<span><span class="co">#&gt;     Light PA                 166.0 [110.0; 210.0]</span></span>
-<span><span class="co">#&gt;     Sedentary behaviour      358.8 [320.0; 400.0]</span></span>
-<span><span class="co">#&gt;     Sleep                    775.7 [710.0; 800.0]</span></span>
-<span><span class="co">#&gt;   Gain from the reference day to the zone centre (95% CI):</span></span>
-<span><span class="co">#&gt;     zbmi: Mean difference -2.56 [-3.36; -1.77], p = 9.7e-10</span></span>
-<span><span class="co">#&gt;     obesity: Odds ratio 0.155 [0.0123; 1.95], p = 0.149</span></span></code></pre></div>
-<p>The <code>Overall zone</code> is the intersection of the two
-outcomes’ zones, as in Dumuid et al. (2021), and Duncan et al. (2024)
-likewise kept the compositions in the best band of all four of their
-outcomes. At the overall centre, where every gain is now evaluated, the
-odds of obesity are 0.155 times those at the reference day, and the 95%
-confidence interval includes 1.</p>
-<p>Dumuid et al. (2021) widened the zones to the best 15% of the
-predictions when the zones of the best 5% and 10% did not overlap. By
-default, <code><a href="../reference/optimal_composition.html">optimal_composition()</a></code> keeps every zone at
-<code>zone</code>. When the zones share no candidate, a message is
-printed, each outcome is evaluated at its own centre, and the result
-holds <code>q_overlap</code> (the largest <code>zone</code> at which the
-zones would share one).</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search: zbmi, obesity</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Search</span></span>
+<span><span class="co">#&gt;   Parts       Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep</span></span>
+<span><span class="co">#&gt;               (total = 1440 min/day)</span></span>
+<span><span class="co">#&gt;   Region      per-part box of the mean +/- 3 SD</span></span>
+<span><span class="co">#&gt;   Grid        multiples of 10 min/day; 36,611 candidates</span></span>
+<span><span class="co">#&gt;   Scale       Mean difference (zbmi), Odds ratio (obesity), versus the reference</span></span>
+<span><span class="co">#&gt;               day</span></span>
+<span><span class="co">#&gt;   Zone rule   best 5% of predictions, lower is better</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Region limits (min/day)</span></span>
+<span><span class="co">#&gt;                              lower     upper</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA      0.1*    180.0</span></span>
+<span><span class="co">#&gt;   Light PA                    51.8*    503.3</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour        315.6*   1013.4</span></span>
+<span><span class="co">#&gt;   Sleep                      239.9*    809.4</span></span>
+<span><span class="co">#&gt;   * the part's observed minimum</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Zone for zbmi: 1,831 compositions (centre [min; max])</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA   125.2  [ 30.0; 170.0]</span></span>
+<span><span class="co">#&gt;   Light PA                  267.2  [110.0; 480.0]</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour       353.9  [320.0; 410.0]</span></span>
+<span><span class="co">#&gt;   Sleep                     693.6  [470.0; 800.0]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Zone for obesity: 1,831 compositions (centre [min; max])</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA   136.9  [ 30.0; 170.0]</span></span>
+<span><span class="co">#&gt;   Light PA                  197.0  [ 60.0; 500.0]</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour       549.2  [320.0; 830.0]</span></span>
+<span><span class="co">#&gt;   Sleep                     556.9  [240.0; 800.0]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Overall zone: 292 compositions (centre [min; max])</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA   139.6  [ 70.0; 170.0]</span></span>
+<span><span class="co">#&gt;   Light PA                  166.0  [110.0; 210.0]</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour       358.8  [320.0; 400.0]</span></span>
+<span><span class="co">#&gt;   Sleep                     775.7  [710.0; 800.0]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Gain from the reference day to the zone centre (95% CI)</span></span>
+<span><span class="co">#&gt;   zbmi      Mean difference   -2.56  [-3.36; -1.77]  p = 9.7e-10</span></span>
+<span><span class="co">#&gt;   obesity   Odds ratio        0.155  [0.0123; 1.95]  p = 0.149</span></span></code></pre></div>
+<p>At the overall centre, predicted obesity odds are 0.155 times those
+at the reference day, though the 95% confidence interval crosses 1.</p>
+<p>When strict zones do not overlap, <code><a href="../reference/optimal_composition.html">optimal_composition()</a></code>
+keeps each outcome at its own centre and reports
+<code>q_overlap</code>—the largest <code>zone</code> value at which an
+intersection would appear:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/optimal_composition.html">optimal_composition</a></span><span class="op">(</span>object <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>zbmi <span class="op">=</span> <span class="va">fit_bmi</span>, obesity <span class="op">=</span> <span class="va">fit_ob</span><span class="op">)</span>,</span>
 <span>                    direction <span class="op">=</span> <span class="st">"min"</span>, zone <span class="op">=</span> <span class="fl">0.999</span><span class="op">)</span></span>
 <span><span class="co">#&gt; The outcomes' zones share no candidate; they would meet at `zone =</span></span>
 <span><span class="co">#&gt; 0.997`.</span></span>
-<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search over Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep (total = 1440 min/day)</span></span>
-<span><span class="co">#&gt;   Region: per-part box of the mean +/- 3 SD; candidates on multiples of 10 min/day</span></span>
-<span><span class="co">#&gt;   Limits: MVPA 0.1 to 180.0 min/day, LPA 51.8 to 503.3 min/day, SB 315.6 to 1013.4 min/day, SPT 239.9 to 809.4 min/day</span></span>
-<span><span class="co">#&gt;   4 of 8 box limits are the observed minimum or maximum of their part (lower: MVPA, LPA, SB, SPT)</span></span>
-<span><span class="co">#&gt;   Scale: Mean difference (zbmi), Odds ratio (obesity) versus the reference day</span></span>
-<span><span class="co">#&gt;   Zone rule: zbmi, the best 0.1% of predictions (lower is better); obesity, the best 0.1% of predictions (lower is better)</span></span>
-<span><span class="co">#&gt;   36,611 candidate compositions inside the region</span></span>
-<span><span class="co">#&gt;   Zone for zbmi: 37 compositions (centre [min; max], min/day)</span></span>
-<span><span class="co">#&gt;     Moderate-to-vigorous PA  157.8 [140.0; 170.0]</span></span>
-<span><span class="co">#&gt;     Light PA                 204.8 [150.0; 260.0]</span></span>
-<span><span class="co">#&gt;     Sedentary behaviour      320.7 [320.0; 320.0]</span></span>
-<span><span class="co">#&gt;     Sleep                    756.7 [690.0; 800.0]</span></span>
-<span><span class="co">#&gt;     100% of the zone lies near the edge of the region (its outer shell); the best composition may lie beyond it.</span></span>
-<span><span class="co">#&gt;   Zone for obesity: 37 compositions (centre [min; max], min/day)</span></span>
-<span><span class="co">#&gt;     Moderate-to-vigorous PA  160.3 [140.0; 170.0]</span></span>
-<span><span class="co">#&gt;     Light PA                 93.1 [60.0; 130.0]</span></span>
-<span><span class="co">#&gt;     Sedentary behaviour      388.3 [340.0; 420.0]</span></span>
-<span><span class="co">#&gt;     Sleep                    798.3 [780.0; 800.0]</span></span>
-<span><span class="co">#&gt;     89% of the zone lies near the edge of the region (its outer shell); the best composition may lie beyond it.</span></span>
-<span><span class="co">#&gt;   Overall zone: no overlap; the zones meet at zone = 0.997</span></span>
-<span><span class="co">#&gt;   Gain from the reference day to each outcome's own centre (95% CI):</span></span>
-<span><span class="co">#&gt;     zbmi: Mean difference -2.99 [-3.86; -2.11], p = 1.13e-10</span></span>
-<span><span class="co">#&gt;     obesity: Odds ratio 0.0963 [0.00401; 2.31], p = 0.149</span></span></code></pre></div>
-<p>To widen the zones until they share a candidate, set
-<code>widen = TRUE</code>. Then <code>zone</code> is lowered in steps of
-0.05 for every outcome it rules, and never below 0.5 (the best 50%).</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search: zbmi, obesity</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Search</span></span>
+<span><span class="co">#&gt;   Parts       Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep</span></span>
+<span><span class="co">#&gt;               (total = 1440 min/day)</span></span>
+<span><span class="co">#&gt;   Region      per-part box of the mean +/- 3 SD</span></span>
+<span><span class="co">#&gt;   Grid        multiples of 10 min/day; 36,611 candidates</span></span>
+<span><span class="co">#&gt;   Scale       Mean difference (zbmi), Odds ratio (obesity), versus the reference</span></span>
+<span><span class="co">#&gt;               day</span></span>
+<span><span class="co">#&gt;   Zone rule   best 0.1% of predictions, lower is better</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Region limits (min/day)</span></span>
+<span><span class="co">#&gt;                              lower     upper</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA      0.1*    180.0</span></span>
+<span><span class="co">#&gt;   Light PA                    51.8*    503.3</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour        315.6*   1013.4</span></span>
+<span><span class="co">#&gt;   Sleep                      239.9*    809.4</span></span>
+<span><span class="co">#&gt;   * the part's observed minimum</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Zone for zbmi: 37 compositions (centre [min; max])</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA   157.8  [140.0; 170.0]</span></span>
+<span><span class="co">#&gt;   Light PA                  204.8  [150.0; 260.0]</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour       320.7  [320.0; 320.0]</span></span>
+<span><span class="co">#&gt;   Sleep                     756.7  [690.0; 800.0]</span></span>
+<span><span class="co">#&gt;   100% of the zone lies near the edge of the region (its outer shell); the best</span></span>
+<span><span class="co">#&gt;   composition may lie beyond it.</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Zone for obesity: 37 compositions (centre [min; max])</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA   160.3  [140.0; 170.0]</span></span>
+<span><span class="co">#&gt;   Light PA                   93.1  [ 60.0; 130.0]</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour       388.3  [340.0; 420.0]</span></span>
+<span><span class="co">#&gt;   Sleep                     798.3  [780.0; 800.0]</span></span>
+<span><span class="co">#&gt;   89% of the zone lies near the edge of the region (its outer shell); the best</span></span>
+<span><span class="co">#&gt;   composition may lie beyond it.</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Overall zone: no overlap; the zones meet at zone = 0.997</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Gain from the reference day to each outcome's own centre (95% CI)</span></span>
+<span><span class="co">#&gt;   zbmi      Mean difference    -2.99  [-3.86; -2.11]   p = 1.13e-10</span></span>
+<span><span class="co">#&gt;   obesity   Odds ratio        0.0963  [0.00401; 2.31]  p = 0.149</span></span></code></pre></div>
+<p>To relax <code>zone</code> automatically in 0.05 steps (down to a
+floor of 0.5) until an intersection is found—as in Dumuid et
+al. (2021)—pass <code>widen = TRUE</code> (clinical
+<code>threshold</code> rules are never widened):</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/optimal_composition.html">optimal_composition</a></span><span class="op">(</span>object <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>zbmi <span class="op">=</span> <span class="va">fit_bmi</span>, obesity <span class="op">=</span> <span class="va">fit_ob</span><span class="op">)</span>,</span>
 <span>                    direction <span class="op">=</span> <span class="st">"min"</span>, zone <span class="op">=</span> <span class="fl">0.999</span>, widen <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; The outcomes' zones share no candidate at `zone = 0.999`; they were widened to</span></span>
 <span><span class="co">#&gt; `zone = 0.949`, the best 5.1% of each outcome's predictions.</span></span>
-<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search over Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep (total = 1440 min/day)</span></span>
-<span><span class="co">#&gt;   Region: per-part box of the mean +/- 3 SD; candidates on multiples of 10 min/day</span></span>
-<span><span class="co">#&gt;   Limits: MVPA 0.1 to 180.0 min/day, LPA 51.8 to 503.3 min/day, SB 315.6 to 1013.4 min/day, SPT 239.9 to 809.4 min/day</span></span>
-<span><span class="co">#&gt;   4 of 8 box limits are the observed minimum or maximum of their part (lower: MVPA, LPA, SB, SPT)</span></span>
-<span><span class="co">#&gt;   Scale: Mean difference (zbmi), Odds ratio (obesity) versus the reference day</span></span>
-<span><span class="co">#&gt;   Zone rule: zbmi, the best 0.1% of predictions (lower is better); obesity, the best 0.1% of predictions (lower is better)</span></span>
-<span><span class="co">#&gt;   36,611 candidate compositions inside the region</span></span>
-<span><span class="co">#&gt;   No candidate is in every zone at zone = 0.999; the zones are widened to zone = 0.949, the best 5.1% of each outcome's predictions</span></span>
-<span><span class="co">#&gt;   Zone for zbmi: 1868 compositions (centre [min; max], min/day)</span></span>
-<span><span class="co">#&gt;     Moderate-to-vigorous PA  124.9 [30.0; 170.0]</span></span>
-<span><span class="co">#&gt;     Light PA                 267.8 [110.0; 480.0]</span></span>
-<span><span class="co">#&gt;     Sedentary behaviour      354.3 [320.0; 410.0]</span></span>
-<span><span class="co">#&gt;     Sleep                    693.0 [470.0; 800.0]</span></span>
-<span><span class="co">#&gt;   Zone for obesity: 1868 compositions (centre [min; max], min/day)</span></span>
-<span><span class="co">#&gt;     Moderate-to-vigorous PA  136.5 [30.0; 170.0]</span></span>
-<span><span class="co">#&gt;     Light PA                 198.0 [60.0; 500.0]</span></span>
-<span><span class="co">#&gt;     Sedentary behaviour      550.9 [320.0; 840.0]</span></span>
-<span><span class="co">#&gt;     Sleep                    554.5 [240.0; 800.0]</span></span>
-<span><span class="co">#&gt;   Overall zone, widened to the best 5.1%: 303 compositions (centre [min; max], min/day)</span></span>
-<span><span class="co">#&gt;     Moderate-to-vigorous PA  139.8 [70.0; 170.0]</span></span>
-<span><span class="co">#&gt;     Light PA                 166.1 [110.0; 210.0]</span></span>
-<span><span class="co">#&gt;     Sedentary behaviour      359.4 [320.0; 400.0]</span></span>
-<span><span class="co">#&gt;     Sleep                    774.6 [710.0; 800.0]</span></span>
-<span><span class="co">#&gt;   Gain from the reference day to the zone centre (95% CI):</span></span>
-<span><span class="co">#&gt;     zbmi: Mean difference -2.56 [-3.35; -1.76], p = 8.99e-10</span></span>
-<span><span class="co">#&gt;     obesity: Odds ratio 0.156 [0.0125; 1.94], p = 0.148</span></span></code></pre></div>
-<p>The step reached is stored as <code>zone_used</code>, and a
-<code>threshold</code> is never changed. When a zone is widened far
-below <code>zone</code>, the compositions in it may not improve every
-outcome over the reference day.</p>
+<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search: zbmi, obesity</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Search</span></span>
+<span><span class="co">#&gt;   Parts       Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep</span></span>
+<span><span class="co">#&gt;               (total = 1440 min/day)</span></span>
+<span><span class="co">#&gt;   Region      per-part box of the mean +/- 3 SD</span></span>
+<span><span class="co">#&gt;   Grid        multiples of 10 min/day; 36,611 candidates</span></span>
+<span><span class="co">#&gt;   Scale       Mean difference (zbmi), Odds ratio (obesity), versus the reference</span></span>
+<span><span class="co">#&gt;               day</span></span>
+<span><span class="co">#&gt;   Zone rule   best 0.1% of predictions, lower is better</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Region limits (min/day)</span></span>
+<span><span class="co">#&gt;                              lower     upper</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA      0.1*    180.0</span></span>
+<span><span class="co">#&gt;   Light PA                    51.8*    503.3</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour        315.6*   1013.4</span></span>
+<span><span class="co">#&gt;   Sleep                      239.9*    809.4</span></span>
+<span><span class="co">#&gt;   * the part's observed minimum</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Zones</span></span>
+<span><span class="co">#&gt;   No candidate is in every zone at zone = 0.999; the zones are widened to zone =</span></span>
+<span><span class="co">#&gt;   0.949, the best 5.1% of each outcome's predictions</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Zone for zbmi: 1,868 compositions (centre [min; max])</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA   124.9  [ 30.0; 170.0]</span></span>
+<span><span class="co">#&gt;   Light PA                  267.8  [110.0; 480.0]</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour       354.3  [320.0; 410.0]</span></span>
+<span><span class="co">#&gt;   Sleep                     693.0  [470.0; 800.0]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Zone for obesity: 1,868 compositions (centre [min; max])</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA   136.5  [ 30.0; 170.0]</span></span>
+<span><span class="co">#&gt;   Light PA                  198.0  [ 60.0; 500.0]</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour       550.9  [320.0; 840.0]</span></span>
+<span><span class="co">#&gt;   Sleep                     554.5  [240.0; 800.0]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Overall zone, widened to the best 5.1%: 303 compositions (centre [min; max])</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA   139.8  [ 70.0; 170.0]</span></span>
+<span><span class="co">#&gt;   Light PA                  166.1  [110.0; 210.0]</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour       359.4  [320.0; 400.0]</span></span>
+<span><span class="co">#&gt;   Sleep                     774.6  [710.0; 800.0]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Gain from the reference day to the zone centre (95% CI)</span></span>
+<span><span class="co">#&gt;   zbmi      Mean difference   -2.56  [-3.35; -1.76]  p = 8.99e-10</span></span>
+<span><span class="co">#&gt;   obesity   Odds ratio        0.156  [0.0125; 1.94]  p = 0.148</span></span></code></pre></div>
+<p>The final <code>zone</code> level reached is stored in
+<code>zone_used</code>. Keep in mind that heavily widened zones may
+include compositions that do not improve every outcome over the
+reference day.</p>
 </div>
-<div class="section level3">
-<h3 id="a-moderated-fit">A moderated fit<a class="anchor" aria-label="anchor" href="#a-moderated-fit"></a>
-</h3>
-<p>When the composition interacts with a covariate, the zone differs
-between the covariate’s values. If you add
-<code>moderator = "sex"</code> to the quadratic, the model is
-<code>ilr()^2 + I(ilr()^2) + ilr() * sex</code>.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="section level2">
+<h2 id="subgroup-optimization-and-other-engines">Subgroup optimization and other engines<a class="anchor" aria-label="anchor" href="#subgroup-optimization-and-other-engines"></a>
+</h2>
+<p>When a quadratic fit includes a factor <code>moderator</code> (here
+<code>sex</code>), the search splits automatically by level—just like
+<code>by</code> in <code><a href="../reference/predict_realloc.html">predict_realloc()</a></code>—estimating a separate
+feasible region from each subgroup’s rows:</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_mod</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/comp_iv.html">comp_iv</a></span><span class="op">(</span>comp <span class="op">=</span> <span class="va">cd</span>, outcome <span class="op">=</span> <span class="st">"zbmi"</span>, model <span class="op">=</span> <span class="st">"lm"</span>,</span>
 <span>                   moderator <span class="op">=</span> <span class="st">"sex"</span>, curvature <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p>As in <code><a href="../reference/predict_realloc.html">predict_realloc()</a></code>, <code>by</code> defaults to a
-factor moderator that <code>at</code> does not pin, so the search is
-split into one zone per level of the moderator, and each level has its
-own region, estimated from its own rows, and its own candidates.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/optimal_composition.html">optimal_composition</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_mod</span>, direction <span class="op">=</span> <span class="st">"min"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search over Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep (total = 1440 min/day)</span></span>
-<span><span class="co">#&gt;   Region: per-part box of the mean +/- 3 SD; candidates on multiples of 10 min/day</span></span>
-<span><span class="co">#&gt;   Limits (sex = female): MVPA 0.1 to 175.0 min/day, LPA 62.8 to 419.5 min/day, SB 316.3 to 927.8 min/day, SPT 239.9 to 786.9 min/day</span></span>
-<span><span class="co">#&gt;   Limits (sex = male): MVPA 1.3 to 185.3 min/day, LPA 51.8 to 503.0 min/day, SB 369.5 to 1027.1 min/day, SPT 252.8 to 792.0 min/day</span></span>
-<span><span class="co">#&gt;   10 of 16 box limits, over the 2 levels of sex, are the observed minimum or maximum of their part</span></span>
-<span><span class="co">#&gt;   Scale: Mean difference versus the reference day</span></span>
-<span><span class="co">#&gt;   Zone rule: zbmi, the best 5% of predictions (lower is better)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; sex = female</span></span>
-<span><span class="co">#&gt;   28,679 candidate compositions inside the region</span></span>
-<span><span class="co">#&gt;   Zone for zbmi: 1434 compositions (centre [min; max], min/day)</span></span>
-<span><span class="co">#&gt;     Moderate-to-vigorous PA  125.7 [40.0; 170.0]</span></span>
-<span><span class="co">#&gt;     Light PA                 254.2 [100.0; 410.0]</span></span>
-<span><span class="co">#&gt;     Sedentary behaviour      354.6 [320.0; 410.0]</span></span>
-<span><span class="co">#&gt;     Sleep                    705.5 [530.0; 780.0]</span></span>
-<span><span class="co">#&gt;   Gain from the reference day to the zone centre (95% CI):</span></span>
-<span><span class="co">#&gt;     zbmi: Mean difference -2.6 [-3.32; -1.88], p = 8.66e-12</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; sex = male</span></span>
-<span><span class="co">#&gt;   34,119 candidate compositions inside the region</span></span>
-<span><span class="co">#&gt;   Zone for zbmi: 1706 compositions (centre [min; max], min/day)</span></span>
-<span><span class="co">#&gt;     Moderate-to-vigorous PA  142.9 [60.0; 180.0]</span></span>
-<span><span class="co">#&gt;     Light PA                 257.7 [100.0; 490.0]</span></span>
-<span><span class="co">#&gt;     Sedentary behaviour      401.8 [370.0; 460.0]</span></span>
-<span><span class="co">#&gt;     Sleep                    637.6 [400.0; 790.0]</span></span>
-<span><span class="co">#&gt;   Gain from the reference day to the zone centre (95% CI):</span></span>
-<span><span class="co">#&gt;     zbmi: Mean difference -2.12 [-2.7; -1.55], p = 3.17e-12</span></span></code></pre></div>
-<p>If you pin the covariate at one value with <code>at</code> instead,
-the region is estimated from every row.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/optimal_composition.html">optimal_composition</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_mod</span>, direction <span class="op">=</span> <span class="st">"min"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search: zbmi</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Search</span></span>
+<span><span class="co">#&gt;   Parts       Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep</span></span>
+<span><span class="co">#&gt;               (total = 1440 min/day)</span></span>
+<span><span class="co">#&gt;   Region      per-part box of the mean +/- 3 SD</span></span>
+<span><span class="co">#&gt;   Grid        multiples of 10 min/day</span></span>
+<span><span class="co">#&gt;   Scale       Mean difference versus the reference day</span></span>
+<span><span class="co">#&gt;   Zone rule   best 5% of predictions, lower is better</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Region limits, sex = female (min/day)</span></span>
+<span><span class="co">#&gt;                             lower    upper</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA     0.1*   175.0</span></span>
+<span><span class="co">#&gt;   Light PA                   62.8*   419.5*</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour       316.3    927.8*</span></span>
+<span><span class="co">#&gt;   Sleep                     239.9*   786.9*</span></span>
+<span><span class="co">#&gt;   * the part's observed minimum or maximum</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Region limits, sex = male (min/day)</span></span>
+<span><span class="co">#&gt;                              lower     upper</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA      1.3*    185.3</span></span>
+<span><span class="co">#&gt;   Light PA                    51.8*    503.0</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour        369.5*   1027.1</span></span>
+<span><span class="co">#&gt;   Sleep                      252.8*    792.0</span></span>
+<span><span class="co">#&gt;   * the part's observed minimum</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; sex = female: 28,679 candidates</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Zone for zbmi: 1,434 compositions (centre [min; max])</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA   125.7  [ 40.0; 170.0]</span></span>
+<span><span class="co">#&gt;   Light PA                  254.2  [100.0; 410.0]</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour       354.6  [320.0; 410.0]</span></span>
+<span><span class="co">#&gt;   Sleep                     705.5  [530.0; 780.0]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Gain from the reference day to the zone centre (95% CI)</span></span>
+<span><span class="co">#&gt;   zbmi   Mean difference   -2.6  [-3.32; -1.88]  p = 8.66e-12</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; sex = male: 34,119 candidates</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Zone for zbmi: 1,706 compositions (centre [min; max])</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA   142.9  [ 60.0; 180.0]</span></span>
+<span><span class="co">#&gt;   Light PA                  257.7  [100.0; 490.0]</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour       401.8  [370.0; 460.0]</span></span>
+<span><span class="co">#&gt;   Sleep                     637.6  [400.0; 790.0]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Gain from the reference day to the zone centre (95% CI)</span></span>
+<span><span class="co">#&gt;   zbmi   Mean difference   -2.12  [-2.7; -1.55]  p = 3.17e-12</span></span></code></pre></div>
+<p>If you pin the covariate to one level with <code>at</code>, the
+feasible region is estimated from the full sample instead:</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/optimal_composition.html">optimal_composition</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_mod</span>, direction <span class="op">=</span> <span class="st">"min"</span>,</span>
 <span>                    at <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sex <span class="op">=</span> <span class="st">"female"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search over Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep (total = 1440 min/day)</span></span>
-<span><span class="co">#&gt;   Region: per-part box of the mean +/- 3 SD; candidates on multiples of 10 min/day</span></span>
-<span><span class="co">#&gt;   Limits: MVPA 0.1 to 180.0 min/day, LPA 51.8 to 503.3 min/day, SB 315.6 to 1013.4 min/day, SPT 239.9 to 809.4 min/day</span></span>
-<span><span class="co">#&gt;   4 of 8 box limits are the observed minimum or maximum of their part (lower: MVPA, LPA, SB, SPT)</span></span>
-<span><span class="co">#&gt;   Scale: Mean difference versus the reference day</span></span>
-<span><span class="co">#&gt;   Zone rule: zbmi, the best 5% of predictions (lower is better)</span></span>
-<span><span class="co">#&gt;   36,611 candidate compositions inside the region</span></span>
-<span><span class="co">#&gt;   Zone for zbmi: 1831 compositions (centre [min; max], min/day)</span></span>
-<span><span class="co">#&gt;     Moderate-to-vigorous PA  121.8 [30.0; 170.0]</span></span>
-<span><span class="co">#&gt;     Light PA                 247.2 [90.0; 440.0]</span></span>
-<span><span class="co">#&gt;     Sedentary behaviour      357.3 [320.0; 410.0]</span></span>
-<span><span class="co">#&gt;     Sleep                    713.7 [510.0; 800.0]</span></span>
-<span><span class="co">#&gt;   Gain from the reference day to the zone centre (95% CI):</span></span>
-<span><span class="co">#&gt;     zbmi: Mean difference -2.58 [-3.3; -1.87], p = 7.24e-12</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="the-day-the-gain-is-measured-from">The day the gain is measured from<a class="anchor" aria-label="anchor" href="#the-day-the-gain-is-measured-from"></a>
-</h3>
-<p>You can measure the gain from any day by giving <code>from</code> one
-positive value per part, which is re-closed to the total. The example
-day is the one in
-<code><a href="../articles/predicting-reallocations.html">vignette("predicting-reallocations", package = "timecoda")</a></code>.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/optimal_composition.html">optimal_composition</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_bmi</span>, direction <span class="op">=</span> <span class="st">"min"</span>,</span>
-<span>                    from <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>MVPA <span class="op">=</span> <span class="fl">30</span>, LPA <span class="op">=</span> <span class="fl">240</span>, SB <span class="op">=</span> <span class="fl">660</span>, SPT <span class="op">=</span> <span class="fl">510</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search over Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep (total = 1440 min/day)</span></span>
-<span><span class="co">#&gt;   Region: per-part box of the mean +/- 3 SD; candidates on multiples of 10 min/day</span></span>
-<span><span class="co">#&gt;   Limits: MVPA 0.1 to 180.0 min/day, LPA 51.8 to 503.3 min/day, SB 315.6 to 1013.4 min/day, SPT 239.9 to 809.4 min/day</span></span>
-<span><span class="co">#&gt;   4 of 8 box limits are the observed minimum or maximum of their part (lower: MVPA, LPA, SB, SPT)</span></span>
-<span><span class="co">#&gt;   Scale: Mean difference versus the given day</span></span>
-<span><span class="co">#&gt;   Zone rule: zbmi, the best 5% of predictions (lower is better)</span></span>
-<span><span class="co">#&gt;   36,611 candidate compositions inside the region</span></span>
-<span><span class="co">#&gt;   Zone for zbmi: 1831 compositions (centre [min; max], min/day)</span></span>
-<span><span class="co">#&gt;     Moderate-to-vigorous PA  125.2 [30.0; 170.0]</span></span>
-<span><span class="co">#&gt;     Light PA                 267.2 [110.0; 480.0]</span></span>
-<span><span class="co">#&gt;     Sedentary behaviour      353.9 [320.0; 410.0]</span></span>
-<span><span class="co">#&gt;     Sleep                    693.6 [470.0; 800.0]</span></span>
-<span><span class="co">#&gt;   Gain from the given day to the zone centre (95% CI):</span></span>
-<span><span class="co">#&gt;     zbmi: Mean difference -2.45 [-3.1; -1.79], p = 2.2e-12</span></span></code></pre></div>
-<p>The zone and its centre are unchanged, while the candidates’ values
-and the gain are now measured from the given day.</p>
-</div>
-<div class="section level3">
-<h3 id="other-engines">Other engines<a class="anchor" aria-label="anchor" href="#other-engines"></a>
-</h3>
-<p>Under the default <code>type = "relative"</code>, each candidate is
-scored by its effect versus <code>from</code>, the measure
-<code><a href="../reference/predict_realloc.html">predict_realloc()</a></code> reports. The search therefore also runs
-on the engines without an absolute prediction, which are the Cox
-(<code>"cox"</code>, <code>"coxme"</code>), ordinal (<code>"clm"</code>,
-<code>"clmm"</code>) and multinomial (<code>"mblogit"</code>) fits. On a
-Cox fit, <code>direction = "max"</code> would favour the highest hazard.
-To search for the lowest hazard of obesity onset, use
-<code>direction = "min"</code>.</p>
+<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search: zbmi</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Search</span></span>
+<span><span class="co">#&gt;   Parts       Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep</span></span>
+<span><span class="co">#&gt;               (total = 1440 min/day)</span></span>
+<span><span class="co">#&gt;   Region      per-part box of the mean +/- 3 SD</span></span>
+<span><span class="co">#&gt;   Grid        multiples of 10 min/day; 36,611 candidates</span></span>
+<span><span class="co">#&gt;   Scale       Mean difference versus the reference day</span></span>
+<span><span class="co">#&gt;   Zone rule   best 5% of predictions, lower is better</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Region limits (min/day)</span></span>
+<span><span class="co">#&gt;                              lower     upper</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA      0.1*    180.0</span></span>
+<span><span class="co">#&gt;   Light PA                    51.8*    503.3</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour        315.6*   1013.4</span></span>
+<span><span class="co">#&gt;   Sleep                      239.9*    809.4</span></span>
+<span><span class="co">#&gt;   * the part's observed minimum</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Zone for zbmi: 1,831 compositions (centre [min; max])</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA   121.8  [ 30.0; 170.0]</span></span>
+<span><span class="co">#&gt;   Light PA                  247.2  [ 90.0; 440.0]</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour       357.3  [320.0; 410.0]</span></span>
+<span><span class="co">#&gt;   Sleep                     713.7  [510.0; 800.0]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Gain from the reference day to the zone centre (95% CI)</span></span>
+<span><span class="co">#&gt;   zbmi   Mean difference   -2.58  [-3.3; -1.87]  p = 7.24e-12</span></span></code></pre></div>
+<p>Because the default <code>type = "relative"</code> scores candidates
+on the contrast scale used by <code><a href="../reference/predict_realloc.html">predict_realloc()</a></code>,
+optimization also works on survival (<code>"cox"</code>,
+<code>"coxme"</code>), ordinal (<code>"clm"</code>,
+<code>"clmm"</code>), and multinomial (<code>"mblogit"</code>) fits. For
+a Cox model, <code>direction = "min"</code> searches for the lowest
+hazard of onset:</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_cox</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/comp_iv.html">comp_iv</a></span><span class="op">(</span>comp <span class="op">=</span> <span class="va">cd</span>, time <span class="op">=</span> <span class="st">"time"</span>, event <span class="op">=</span> <span class="st">"event"</span>, model <span class="op">=</span> <span class="st">"cox"</span>,</span>
 <span>                   covariates <span class="op">=</span> <span class="st">"sex"</span>, curvature <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/optimal_composition.html">optimal_composition</a></span><span class="op">(</span>object <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>onset <span class="op">=</span> <span class="va">fit_cox</span><span class="op">)</span>, direction <span class="op">=</span> <span class="st">"min"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search over Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep (total = 1440 min/day)</span></span>
-<span><span class="co">#&gt;   Region: per-part box of the mean +/- 3 SD; candidates on multiples of 10 min/day</span></span>
-<span><span class="co">#&gt;   Limits: MVPA 0.1 to 180.0 min/day, LPA 51.8 to 503.3 min/day, SB 315.6 to 1013.4 min/day, SPT 239.9 to 809.4 min/day</span></span>
-<span><span class="co">#&gt;   4 of 8 box limits are the observed minimum or maximum of their part (lower: MVPA, LPA, SB, SPT)</span></span>
-<span><span class="co">#&gt;   Scale: Hazard ratio versus the reference day</span></span>
-<span><span class="co">#&gt;   Zone rule: onset, the best 5% of predictions (lower is better)</span></span>
-<span><span class="co">#&gt;   36,611 candidate compositions inside the region</span></span>
-<span><span class="co">#&gt;   Zone for onset: 1831 compositions (centre [min; max], min/day)</span></span>
-<span><span class="co">#&gt;     Moderate-to-vigorous PA  151.4 [80.0; 170.0]</span></span>
-<span><span class="co">#&gt;     Light PA                 339.9 [90.0; 500.0]</span></span>
-<span><span class="co">#&gt;     Sedentary behaviour      375.7 [320.0; 570.0]</span></span>
-<span><span class="co">#&gt;     Sleep                    573.0 [240.0; 800.0]</span></span>
-<span><span class="co">#&gt;   Gain from the reference day to the zone centre (95% CI):</span></span>
-<span><span class="co">#&gt;     onset: Hazard ratio 0.205 [0.0876; 0.48], p = 0.000259</span></span></code></pre></div>
-<p>On an ordinal fit, <code>direction = "max"</code> favours the higher
-outcome categories, and a multinomial fit is searched for the outcome
-level named by <code>category</code>, against the reference level (see
-<code><a href="../reference/optimal_composition.html">?optimal_composition</a></code>).</p>
-</div>
+<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search: onset</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Search</span></span>
+<span><span class="co">#&gt;   Parts       Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep</span></span>
+<span><span class="co">#&gt;               (total = 1440 min/day)</span></span>
+<span><span class="co">#&gt;   Region      per-part box of the mean +/- 3 SD</span></span>
+<span><span class="co">#&gt;   Grid        multiples of 10 min/day; 36,611 candidates</span></span>
+<span><span class="co">#&gt;   Scale       Hazard ratio versus the reference day</span></span>
+<span><span class="co">#&gt;   Zone rule   best 5% of predictions, lower is better</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Region limits (min/day)</span></span>
+<span><span class="co">#&gt;                              lower     upper</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA      0.1*    180.0</span></span>
+<span><span class="co">#&gt;   Light PA                    51.8*    503.3</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour        315.6*   1013.4</span></span>
+<span><span class="co">#&gt;   Sleep                      239.9*    809.4</span></span>
+<span><span class="co">#&gt;   * the part's observed minimum</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Zone for onset: 1,831 compositions (centre [min; max])</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA   151.4  [ 80.0; 170.0]</span></span>
+<span><span class="co">#&gt;   Light PA                  339.9  [ 90.0; 500.0]</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour       375.7  [320.0; 570.0]</span></span>
+<span><span class="co">#&gt;   Sleep                     573.0  [240.0; 800.0]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Gain from the reference day to the zone centre (95% CI)</span></span>
+<span><span class="co">#&gt;   onset   Hazard ratio   0.205  [0.0876; 0.48]  p = 0.000259</span></span></code></pre></div>
+<p>On ordinal fits, <code>direction = "max"</code> favours higher
+outcome categories; on multinomial fits, specify the target level with
+<code>category</code> (see <code><a href="../reference/optimal_composition.html">?optimal_composition</a></code>).</p>
 </div>
 <div class="section level2">
-<h2 id="part-3--the-zone-on-the-surface">Part 3. The zone on the surface<a class="anchor" aria-label="anchor" href="#part-3--the-zone-on-the-surface"></a>
+<h2 id="plotting-the-zone-on-the-response-surface">Plotting the zone on the response surface<a class="anchor" aria-label="anchor" href="#plotting-the-zone-on-the-response-surface"></a>
 </h2>
-<p>To see the zone on the surface of one outcome, use
-<code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>. It draws ternary panels, one for each group of
-three parts, as <code><a href="../reference/plot.comp_iv.html">plot.comp_iv()</a></code> does for a surface, and the
-surface is on the <code>type</code> scale of the search, the effect
-versus <code>from</code> under the default
-<code>type = "relative"</code>. With four parts, each panel is a slice
-through the zone centre, which a red point marks, with the fourth part
-held at its value there. The red outline is the convex hull of the
-slice’s computed cells that lie in the outcome’s zone, as Duncan et
-al. (2024) outlined their zones on ternary plots.</p>
+<p>To inspect the zone visually, <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> draws ternary
+slices through the zone centre (red point), holding the fourth behaviour
+at its centre value and outlining the convex hull of the zone cells in
+red (Duncan et al., 2024):</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">opt</span><span class="op">)</span></span></code></pre></div>
-<p><img src="optimal-composition_files/figure-html/plot-bmi-1.png" class="r-plt" alt="One of four ternary panels, one for each group of three parts, of the quadratic linear model's mean difference in z-BMI from the reference day, a slice through the zone centre with the fourth part held at its value there. A smoothed patch of colour inside the search's box runs from dark purple for the lowest mean difference to yellow for the highest, a red outline encloses the computed cells in the z-BMI zone, and a red point marks the zone centre." width="100%"><img src="optimal-composition_files/figure-html/plot-bmi-2.png" class="r-plt" alt="One of four ternary panels, one for each group of three parts, of the quadratic linear model's mean difference in z-BMI from the reference day, a slice through the zone centre with the fourth part held at its value there. A smoothed patch of colour inside the search's box runs from dark purple for the lowest mean difference to yellow for the highest, a red outline encloses the computed cells in the z-BMI zone, and a red point marks the zone centre." width="100%"><img src="optimal-composition_files/figure-html/plot-bmi-3.png" class="r-plt" alt="One of four ternary panels, one for each group of three parts, of the quadratic linear model's mean difference in z-BMI from the reference day, a slice through the zone centre with the fourth part held at its value there. A smoothed patch of colour inside the search's box runs from dark purple for the lowest mean difference to yellow for the highest, a red outline encloses the computed cells in the z-BMI zone, and a red point marks the zone centre." width="100%"><img src="optimal-composition_files/figure-html/plot-bmi-4.png" class="r-plt" alt="One of four ternary panels, one for each group of three parts, of the quadratic linear model's mean difference in z-BMI from the reference day, a slice through the zone centre with the fourth part held at its value there. A smoothed patch of colour inside the search's box runs from dark purple for the lowest mean difference to yellow for the highest, a red outline encloses the computed cells in the z-BMI zone, and a red point marks the zone centre." width="100%"></p>
-<p>The surface is drawn only for the cells inside the search’s region,
-and the rest of the triangle is left blank.</p>
-<p>On a search with several outcomes, you name the surface to draw with
-<code>outcome</code>. The red point is then the overall centre, and the
-outline encloses that outcome’s own zone.</p>
+<p><img src="optimal-composition_files/figure-html/plot-bmi-1.png" class="r-plt" alt="One of four ternary panels, one for each group of three parts, of the quadratic linear model's surface of the mean difference in z-BMI from the reference composition as tiles. Several dozen small hexagonal tiles form a patch inside the triangle, coloured from dark purple for the panel's lowest mean difference to yellow for its highest, with a black point at the reference composition; the rest of the triangle is blank grey, and a legend titled Mean difference gives the scale." width="100%"><img src="optimal-composition_files/figure-html/plot-bmi-2.png" class="r-plt" alt="One of four ternary panels, one for each group of three parts, of the quadratic linear model's surface of the mean difference in z-BMI from the reference composition as tiles. Several dozen small hexagonal tiles form a patch inside the triangle, coloured from dark purple for the panel's lowest mean difference to yellow for its highest, with a black point at the reference composition; the rest of the triangle is blank grey, and a legend titled Mean difference gives the scale." width="100%"><img src="optimal-composition_files/figure-html/plot-bmi-3.png" class="r-plt" alt="One of four ternary panels, one for each group of three parts, of the quadratic linear model's surface of the mean difference in z-BMI from the reference composition as tiles. Several dozen small hexagonal tiles form a patch inside the triangle, coloured from dark purple for the panel's lowest mean difference to yellow for its highest, with a black point at the reference composition; the rest of the triangle is blank grey, and a legend titled Mean difference gives the scale." width="100%"><img src="optimal-composition_files/figure-html/plot-bmi-4.png" class="r-plt" alt="One of four ternary panels, one for each group of three parts, of the quadratic linear model's surface of the mean difference in z-BMI from the reference composition as tiles. Several dozen small hexagonal tiles form a patch inside the triangle, coloured from dark purple for the panel's lowest mean difference to yellow for its highest, with a black point at the reference composition; the rest of the triangle is blank grey, and a legend titled Mean difference gives the scale." width="100%"></p>
+<p>For multi-outcome searches, select which surface to display with
+<code>outcome</code> (the red point marks the overall centre while the
+outline encloses that outcome’s own zone). For searches split by a
+moderator, select a subgroup with <code>level</code>.</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">opt2</span>, outcome <span class="op">=</span> <span class="st">"obesity"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="optimal-composition_files/figure-html/plot-obesity-1.png" class="r-plt" alt="One of four ternary panels of the logistic model's odds ratio of obesity versus the reference day, a slice through the overall zone centre with the fourth part held at its value there. A smoothed patch of colour runs from dark purple for the lowest odds ratio to yellow for the highest, a red outline encloses the computed cells in the obesity zone, and a red point marks the overall centre." width="100%"><img src="optimal-composition_files/figure-html/plot-obesity-2.png" class="r-plt" alt="One of four ternary panels of the logistic model's odds ratio of obesity versus the reference day, a slice through the overall zone centre with the fourth part held at its value there. A smoothed patch of colour runs from dark purple for the lowest odds ratio to yellow for the highest, a red outline encloses the computed cells in the obesity zone, and a red point marks the overall centre." width="100%"><img src="optimal-composition_files/figure-html/plot-obesity-3.png" class="r-plt" alt="One of four ternary panels of the logistic model's odds ratio of obesity versus the reference day, a slice through the overall zone centre with the fourth part held at its value there. A smoothed patch of colour runs from dark purple for the lowest odds ratio to yellow for the highest, a red outline encloses the computed cells in the obesity zone, and a red point marks the overall centre." width="100%"><img src="optimal-composition_files/figure-html/plot-obesity-4.png" class="r-plt" alt="One of four ternary panels of the logistic model's odds ratio of obesity versus the reference day, a slice through the overall zone centre with the fourth part held at its value there. A smoothed patch of colour runs from dark purple for the lowest odds ratio to yellow for the highest, a red outline encloses the computed cells in the obesity zone, and a red point marks the overall centre." width="100%"></p>
-<p>To draw the zone of one level of a search split with <code>by</code>,
-name the level with <code>level</code>. The covariate is held at that
-level on the surface.</p>
 </div>
 <div class="section level2">
-<h2 id="part-4--when-the-fit-is-linear">Part 4. When the fit is linear<a class="anchor" aria-label="anchor" href="#part-4--when-the-fit-is-linear"></a>
+<h2 id="what-happens-on-a-linear-fit">What happens on a linear fit<a class="anchor" aria-label="anchor" href="#what-happens-on-a-linear-fit"></a>
 </h2>
-<p>The predicted outcome of a fit with no curvature term in the
-coordinates is linear in them, so its best prediction inside any region
-lies on the region’s edge, and the zone marks where the region ends.
-<code><a href="../reference/optimal_composition.html">optimal_composition()</a></code> still runs the search.</p>
-<p>In place of the outer-shell line, the printed result states two
-points under each zone of such a fit, in every region: the fit has no
-interior optimum, so the zone is the edge of the region in the direction
-of benefit, and <code>curvature = TRUE</code> refits it with a surface
-that can hold one. The share of the zone in the outer shell is still
-given in the <code>on_boundary</code> column of <code>zones</code>.</p>
-<p>Such a zone is located by the region, and it moves with a different
-<code>coverage</code> or <code>region</code>. A linear fit therefore
-does not support a Goldilocks reading.</p>
+<p>A model without curvature terms is monotonic in ILR coordinates, so
+its best predictions always lie on the outer edge of whichever
+<code>region</code> or <code>coverage</code> you choose.
+<code><a href="../reference/optimal_composition.html">optimal_composition()</a></code> still runs on linear fits, prints a
+note flagging the absence of an interior optimum (suggesting
+<code>curvature = TRUE</code>), and records the boundary fraction in
+<code>zones$on_boundary</code>, but such boundary zones do not support a
+Goldilocks interpretation.</p>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
@@ -652,11 +741,11 @@ physical performance, risk and fear of falling in older adults.
 <ul>
 <li>
 <code><a href="../articles/predicting-reallocations.html">vignette("predicting-reallocations", package = "timecoda")</a></code>:
-reallocation estimates between named parts, their publication table and
+reallocation estimates between named parts, their publication table, and
 the reallocation figure.</li>
 <li>
 <code><a href="../articles/advanced-models.html">vignette("advanced-models", package = "timecoda")</a></code>: the
-formula interface and <code><a href="../reference/ilr.html">ilr()</a></code>, moderation and non-linear
+formula interface and <code><a href="../reference/ilr.html">ilr()</a></code>, moderation, and non-linear
 composition terms.</li>
 <li>
 <code><a href="../articles/composition-predictor.html">vignette("composition-predictor", package = "timecoda")</a></code>:

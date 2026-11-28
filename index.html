@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">timecoda</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.6.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.6.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -68,49 +68,76 @@
 </h1></div>
 <!-- badges: start -->
 
-<p><code>timecoda</code> is an R package for implementing current methods of time-use epidemiology, in particular compositional data analysis applied to behavioural data.</p>
-<p>The framework behind the package comes from a series of publications. Together they set out the definitions, concepts, statistical methods and research areas of time-use epidemiology (Pedišić, 2014; Pedišić et al., 2017; Dumuid, Stanford, Martín-Fernández, et al., 2018; Dumuid, Stanford, Pedišić, et al., 2018; Dumuid et al., 2019, 2020). For further information on the topic, see the <a href="https://www.intue.org/" class="external-link">International Network of Time-Use Epidemiologists (INTUE)</a>.</p>
+<p><code>timecoda</code> implements compositional data analysis (CoDA) workflows for time-use epidemiology in R. It provides a consistent interface for declaring and screening compositions, fitting regression models on isometric log-ratio (ILR) coordinates, estimating isotemporal time reallocations, and searching for optimal compositions (“Goldilocks zones”).</p>
+<p>The statistical framework draws on the foundational time-use epidemiology literature (Pedišić, 2014; Pedišić et al., 2017; Dumuid, Stanford, Martín-Fernández, et al., 2018; Dumuid, Stanford, Pedišić, et al., 2018; Dumuid et al., 2019, 2020). For more on the field, visit the <a href="https://www.intue.org/" class="external-link">International Network of Time-Use Epidemiologists (INTUE)</a>.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p><code>timecoda</code> needs R 4.4.0 or newer. To install it from GitHub, use the <code>pak</code> package:</p>
+<p><code>timecoda</code> requires R 4.4.0 or newer. Install the development version from GitHub with <code>pak</code>:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"pak"</span><span class="op">)</span></span>
 <span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"MarcusVVLopes/timecoda"</span><span class="op">)</span></span></code></pre></div>
-<p>To install all the suggested packages for optional features, run the same call with <code>dependencies = TRUE</code>.</p>
+<p>To install suggested packages for optional features (such as <code>gt</code> tables, <code>DHARMa</code> diagnostics, and multilevel or robust model engines):</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"MarcusVVLopes/timecoda"</span>, dependencies <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
+<h2 id="quick-example">Quick example<a class="anchor" aria-label="anchor" href="#quick-example"></a>
+</h2>
+<p>Using the bundled <code>timeuse</code> dataset, a typical analysis declares the daily composition, fits a compositional regression model, and translates the ILR estimates into minute-based time reallocations:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://marcusvvlopes.github.io/timecoda/">timecoda</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">cd</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/declare_composition.html">declare_composition</a></span><span class="op">(</span></span>
+<span>  data    <span class="op">=</span> <span class="va">timeuse</span>,</span>
+<span>  parts   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"MVPA"</span>, <span class="st">"LPA"</span>, <span class="st">"SB"</span>, <span class="st">"SPT"</span><span class="op">)</span>,</span>
+<span>  closure <span class="op">=</span> <span class="fl">1440</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">fit_ob</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/comp_iv.html">comp_iv</a></span><span class="op">(</span></span>
+<span>  comp    <span class="op">=</span> <span class="va">cd</span>,</span>
+<span>  outcome <span class="op">=</span> <span class="st">"obesity"</span>,</span>
+<span>  model   <span class="op">=</span> <span class="st">"glm"</span>,</span>
+<span>  family  <span class="op">=</span> <span class="st">"binomial"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_ob</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/predict_realloc.html">predict_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_ob</span>, from <span class="op">=</span> <span class="st">"SB"</span>, to <span class="op">=</span> <span class="st">"MVPA"</span>, delta <span class="op">=</span> <span class="fl">15</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
 <h2 id="getting-started">Getting started<a class="anchor" aria-label="anchor" href="#getting-started"></a>
 </h2>
-<p>For a brief tutorial using the bundled <code>timeuse</code> data, see <a href="https://marcusvvlopes.github.io/timecoda/articles/timecoda.html">Getting started with timecoda</a>.</p>
-<p>To find the reference pages, check the <a href="https://marcusvvlopes.github.io/timecoda/">package website</a>. For the other articles, see the list below:</p>
+<p>For an end-to-end walkthrough on the <code>timeuse</code> dataset, start with <a href="https://marcusvvlopes.github.io/timecoda/articles/timecoda.html">Getting started with timecoda</a>. Function documentation is available on the <a href="https://marcusvvlopes.github.io/timecoda/">package website</a>, alongside topic-specific articles:</p>
 <ul>
-<li><a href="https://marcusvvlopes.github.io/timecoda/articles/composition-variable.html">Working with a compositional variable</a></li>
-<li><a href="https://marcusvvlopes.github.io/timecoda/articles/composition-predictor.html">Modelling an outcome from a composition</a></li>
-<li><a href="https://marcusvvlopes.github.io/timecoda/articles/predicting-reallocations.html">Predicting time reallocations</a></li>
-<li><a href="https://marcusvvlopes.github.io/timecoda/articles/advanced-models.html">Advanced model engines and the formula interface</a></li>
-<li><a href="https://marcusvvlopes.github.io/timecoda/articles/optimal-composition.html">Finding the Goldilocks zone</a></li>
+<li>
+<a href="https://marcusvvlopes.github.io/timecoda/articles/composition-variable.html">Working with a compositional variable</a> — validating compositions, imputing zeroes, flagging outliers, and descriptive plots.</li>
+<li>
+<a href="https://marcusvvlopes.github.io/timecoda/articles/composition-predictor.html">Modelling an outcome from a composition</a> — fitting ILR regression models with <code><a href="reference/comp_iv.html">comp_iv()</a></code>, checking diagnostics, and plotting response surfaces.</li>
+<li>
+<a href="https://marcusvvlopes.github.io/timecoda/articles/predicting-reallocations.html">Predicting time reallocations</a> — pairwise, one-to-all, and custom reallocations, subgroup moderation, and transfer curves.</li>
+<li>
+<a href="https://marcusvvlopes.github.io/timecoda/articles/optimal-composition.html">Finding the Goldilocks zone</a> — single- and multi-outcome optimization over feasible compositions.</li>
+<li>
+<a href="https://marcusvvlopes.github.io/timecoda/articles/advanced-models.html">Advanced model engines and the formula interface</a> — multilevel, survival, ordinal, multinomial, and robust engines, plus custom <code><a href="reference/ilr.html">ilr()</a></code> formulas and varying-total compositions.</li>
 </ul>
 </div>
 <div class="section level2">
 <h2 id="getting-help-and-contributing">Getting help and contributing<a class="anchor" aria-label="anchor" href="#getting-help-and-contributing"></a>
 </h2>
-<p>To ask a question or report a bug, use the <a href="https://github.com/MarcusVVLopes/timecoda/issues" class="external-link">issue tracker</a>. Before you write any code for a new feature, discuss it in an issue. For instructions on proposing a change, see the <a href="https://github.com/MarcusVVLopes/timecoda/blob/main/.github/CONTRIBUTING.md" class="external-link">contributing guide</a>, and follow the <a href="https://github.com/MarcusVVLopes/timecoda/blob/main/.github/CODE_OF_CONDUCT.md" class="external-link">code of conduct</a> when you contribute.</p>
+<p>To ask a question or report a bug, open an issue on the <a href="https://github.com/MarcusVVLopes/timecoda/issues" class="external-link">issue tracker</a>. Before writing code for a new feature, please discuss it in an issue first. See the <a href="https://github.com/MarcusVVLopes/timecoda/blob/main/.github/CONTRIBUTING.md" class="external-link">contributing guide</a> for workflow instructions, and note that participation is governed by the <a href="https://github.com/MarcusVVLopes/timecoda/blob/main/.github/CODE_OF_CONDUCT.md" class="external-link">code of conduct</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="development">Development<a class="anchor" aria-label="anchor" href="#development"></a>
 </h2>
-<p>The developers specify the statistical methods and write the first implementation of each feature. Before release, each statistical method is benchmarked against established R packages (such as <code>robCompositions</code>, <code>compositions</code> and <code>codaredistlm</code>), hand-fitted models or published results. These benchmarks are part of the package’s tests (<code>tests/testthat/test-benchmark-*.R</code>), so anyone can rerun them.</p>
-<p>AI tools (Claude, by Anthropic) help with documentation, tests, code review and refactoring. The developers review everything these tools produce and remain responsible for the package.</p>
+<p>We build <code>timecoda</code> around verifiable statistical accuracy and transparent development practices. We specify all statistical methods ourselves and benchmark each estimator before release against established R packages (such as <code>robCompositions</code>, <code>compositions</code>, and <code>codaredistlm</code>), hand-fitted models, or published results. These benchmarks live in <code>tests/testthat/test-benchmark-*.R</code>, so anyone can inspect and rerun them.</p>
+<p>We also use AI tools to assist with documentation, unit tests, code review, and refactoring. We review, test, and take full responsibility for everything shipped in the package.</p>
 </div>
 <div class="section level2">
 <h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
 </h2>
 <p>To cite <code>timecoda</code>, run <code>citation("timecoda")</code>:</p>
 <blockquote>
-<p>Lopes MVV, Tozetto WR, de Camargo R, Zhang K (2026). timecoda: Compositional Data Analysis for Time-Use Behaviour Research. R package version 0.6.0, <a href="https://github.com/MarcusVVLopes/timecoda" class="external-link uri">https://github.com/MarcusVVLopes/timecoda</a>.</p>
+<p>Lopes MVV, Tozetto WR, de Camargo R, Zhang K (2026). timecoda: Compositional Data Analysis for Time-Use Behaviour Research. R package version 0.6.1, <a href="https://github.com/MarcusVVLopes/timecoda" class="external-link uri">https://github.com/MarcusVVLopes/timecoda</a>.</p>
 </blockquote>
 </div>
 <div class="section level2">

@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">timecoda</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.6.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.6.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,25 +70,37 @@
       <h1>Getting started with timecoda</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/MarcusVVLopes/timecoda/blob/v0.6.0/vignettes/timecoda.Rmd" class="external-link"><code>vignettes/timecoda.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/MarcusVVLopes/timecoda/blob/main/vignettes/timecoda.Rmd" class="external-link"><code>vignettes/timecoda.Rmd</code></a></small>
       <div class="d-none name"><code>timecoda.Rmd</code></div>
     </div>
 
     
     
+<p><code>timecoda</code> supports time-use compositional data analysis
+(CoDA) from data declaration through regression modelling, isotemporal
+time reallocations, and optimal-composition search. We assume basic
+familiarity with R regression workflows and core CoDA concepts (simplex
+closure, isometric log-ratio transformations, and pivot
+coordinates).</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://marcusvvlopes.github.io/timecoda/">timecoda</a></span><span class="op">)</span></span></code></pre></div>
+<p>Every analysis follows a single pipeline built around two objects:
+<code>compD</code> (a validated, closed composition) and
+<code>comp_iv</code> (a regression model with the composition as
+predictor).</p>
+<p><img src="workflow.svg" class="r-plt" alt="Flowchart of the timecoda workflow. A data frame with the parts and an outcome enters declare_composition(), which returns a compD object. The compD is described with summary(), plot() and pub_ready(), and modelled as a predictor of an outcome with comp_iv(). A comp_iv() fit leads to fit_check() for diagnostics, to predict_realloc() for reallocation estimates, which are summarized with summary() and pub_ready() and drawn with plot_realloc(), and to optimal_composition() for a search of the fit for the best compositions. A second path, drawn in grey and dashed, would model the composition as the outcome with comp_dv(), described with summary() and plot(). A caption at the bottom explains that grey marks what is planned and not yet implemented." width="82%"></p>
+<p><em>(Modelling the composition as the outcome via
+<code>comp_dv()</code> is planned for a future release.)</em></p>
 <div class="section level2">
-<h2 id="the-example-data">The example data<a class="anchor" aria-label="anchor" href="#the-example-data"></a>
+<h2 id="declaring-and-describing-a-composition">Declaring and describing a composition<a class="anchor" aria-label="anchor" href="#declaring-and-describing-a-composition"></a>
 </h2>
-<p><code>timeuse</code>, included in the package, is a simulated sample
-of 300 participants. Each row holds one person’s day, divided into four
-parts that sum to 1440 minutes, namely moderate-to-vigorous physical
-activity (<code>MVPA</code>), light physical activity
-(<code>LPA</code>), sedentary behaviour (<code>SB</code>) and sleep
-(<code>SPT</code>, the sleep period time). The data also hold several
-outcomes, among them the body-mass-index z-score <code>zbmi</code> and
-the binary outcome <code>obesity</code>.</p>
+<p>We will use the bundled <code>timeuse</code> dataset, a simulated
+sample of 300 participants whose 1,440-minute days are partitioned into
+moderate-to-vigorous physical activity (<code>MVPA</code>), light
+physical activity (<code>LPA</code>), sedentary behaviour
+(<code>SB</code>), and sleep period time (<code>SPT</code>), alongside
+BMI z-score (<code>zbmi</code>) and binary obesity status
+(<code>obesity</code>).</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">parts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"MVPA"</span>, <span class="st">"LPA"</span>, <span class="st">"SB"</span>, <span class="st">"SPT"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">timeuse</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">parts</span>, <span class="st">"zbmi"</span>, <span class="st">"obesity"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
@@ -101,23 +113,10 @@ the binary outcome <code>obesity</code>.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>  95.5  229.  445.  670. -<span style="color: #BB0000;">2.40</span>  no     </span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>   1.7  504.  479.  455.  2.56  no     </span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span>  11.2  150.  583.  696. -<span style="color: #BB0000;">0.259</span> no</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="the-workflow">The workflow<a class="anchor" aria-label="anchor" href="#the-workflow"></a>
-</h2>
-<p><img src="workflow.svg" class="r-plt" alt="Flowchart of the timecoda workflow. A data frame with the parts and an outcome enters declare_composition(), which returns a compD object. The compD is described with summary(), plot() and pub_ready(), and modelled as a predictor of an outcome with comp_iv(). A comp_iv() fit leads to fit_check() for diagnostics, to predict_realloc() for reallocation estimates, which are summarized with summary() and pub_ready() and drawn with plot_realloc(), and to optimal_composition() for a search of the fit for the best compositions. A second path, drawn in grey and dashed, would model the composition as the outcome with comp_dv(), described with summary() and plot(). A caption at the bottom explains that grey marks what is planned and not yet implemented." width="82%"></p>
-<p>Modelling the composition as the outcome is planned and will be added
-soon.</p>
-</div>
-<div class="section level2">
-<h2 id="declare-the-composition">Declare the composition<a class="anchor" aria-label="anchor" href="#declare-the-composition"></a>
-</h2>
-<p>To prepare the data for analysis, declare the composition with
-<code><a href="../reference/declare_composition.html">declare_composition()</a></code>. It checks the parts, imputes any
-zeroes and stores the closed composition in a <code>compD</code> object,
-which <code><a href="../reference/comp_iv.html">comp_iv()</a></code> takes. To describe the composition, use
-<code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> and <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>. To format the summary as
-a publication table, use <code><a href="../reference/pub_ready.html">pub_ready()</a></code>.</p>
+<p>To prepare these columns for analysis, we declare the composition
+once with <code><a href="../reference/declare_composition.html">declare_composition()</a></code>. It validates the parts,
+imputes any zeroes, closes rows to 1,440 minutes, and stores the
+metadata so downstream functions reuse the same labels and scale:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cd</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/declare_composition.html">declare_composition</a></span><span class="op">(</span></span>
 <span>  data    <span class="op">=</span> <span class="va">timeuse</span>,</span>
@@ -129,9 +128,9 @@ a publication table, use <code><a href="../reference/pub_ready.html">pub_ready()
 <span>    SB   <span class="op">=</span> <span class="st">"Sedentary behaviour"</span>,</span>
 <span>    SPT  <span class="op">=</span> <span class="st">"Sleep"</span></span>
 <span>  <span class="op">)</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">cd</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">cd</span><span class="op">)</span></span>
 <span><span class="co">#&gt; &lt;compD&gt; compositional variable summary</span></span>
 <span><span class="co">#&gt;   Parts: Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep</span></span>
 <span><span class="co">#&gt;   Closure: 1440</span></span>
@@ -158,12 +157,11 @@ a publication table, use <code><a href="../reference/pub_ready.html">pub_ready()
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> LPA   Light PA                 1.67 0     0.247 0.260</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> SB    Sedentary behaviour      1.55 0.247 0     0.140</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> SPT   Sleep                    1.44 0.260 0.140 0</span></span></code></pre></div>
-<p>In the descriptive table, the closed geometric mean of each part
-comes first. Together, these means are the centre of the sample’s
-compositions and sum to 1440 minutes.</p>
-<p>To format the summary as tables with the <code>gt</code> package for
-publication, use <code><a href="../reference/pub_ready.html">pub_ready()</a></code>.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<p>In the descriptive table, <code>geom_mean</code> gives the closed
+compositional centre summing to 1,440 minutes, while the remaining
+columns summarize the raw data. To format the summary for a manuscript
+with <code>gt</code>, pass it to <code><a href="../reference/pub_ready.html">pub_ready()</a></code>:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/pub_ready.html">pub_ready</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">cd</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">$</span><span class="va">desc</span></span></code></pre></div>
 <div id="mwlefoodfi" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <style>#mwlefoodfi table {
@@ -657,29 +655,26 @@ publication, use <code><a href="../reference/pub_ready.html">pub_ready()</a></co
 </tbody>
 </table>
 </div>
-<p>To plot the composition, use <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>. The figure shows
-the density and the boxplot of each part, one ternary panel for each set
-of three parts and the variation matrix as a heatmap. Dashed crosshairs
-mark the geometric mean, and the closed curve is a 95% confidence
-region.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<p>We can inspect the marginal distributions, pairwise ternary
+projections (with the compositional centre and 95% confidence region),
+and variation matrix together using <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">cd</span><span class="op">)</span></span></code></pre></div>
 <p><img src="timecoda_files/figure-html/plot-cd-1.png" class="r-plt" alt="Density curves and boxplots of the four parts in minutes per day; four ternary plots, one for each set of three parts, each with the geometric mean marked by dashed crosshairs and a 95% confidence region drawn as a closed curve; and a heatmap of the variation matrix between the four parts." width="100%"><img src="timecoda_files/figure-html/plot-cd-2.png" class="r-plt" alt="Density curves and boxplots of the four parts in minutes per day; four ternary plots, one for each set of three parts, each with the geometric mean marked by dashed crosshairs and a 95% confidence region drawn as a closed curve; and a heatmap of the variation matrix between the four parts." width="100%"><img src="timecoda_files/figure-html/plot-cd-3.png" class="r-plt" alt="Density curves and boxplots of the four parts in minutes per day; four ternary plots, one for each set of three parts, each with the geometric mean marked by dashed crosshairs and a 95% confidence region drawn as a closed curve; and a heatmap of the variation matrix between the four parts." width="100%"><img src="timecoda_files/figure-html/plot-cd-4.png" class="r-plt" alt="Density curves and boxplots of the four parts in minutes per day; four ternary plots, one for each set of three parts, each with the geometric mean marked by dashed crosshairs and a 95% confidence region drawn as a closed curve; and a heatmap of the variation matrix between the four parts." width="100%"><img src="timecoda_files/figure-html/plot-cd-5.png" class="r-plt" alt="Density curves and boxplots of the four parts in minutes per day; four ternary plots, one for each set of three parts, each with the geometric mean marked by dashed crosshairs and a 95% confidence region drawn as a closed curve; and a heatmap of the variation matrix between the four parts." width="100%"><img src="timecoda_files/figure-html/plot-cd-6.png" class="r-plt" alt="Density curves and boxplots of the four parts in minutes per day; four ternary plots, one for each set of three parts, each with the geometric mean marked by dashed crosshairs and a 95% confidence region drawn as a closed curve; and a heatmap of the variation matrix between the four parts." width="100%"><img src="timecoda_files/figure-html/plot-cd-7.png" class="r-plt" alt="Density curves and boxplots of the four parts in minutes per day; four ternary plots, one for each set of three parts, each with the geometric mean marked by dashed crosshairs and a 95% confidence region drawn as a closed curve; and a heatmap of the variation matrix between the four parts." width="100%"></p>
-<p>See more in <a href="composition-variable.html">Working with a
-compositional variable</a>.</p>
+<p>For zero imputation, multivariate outlier screening, and
+varying-total closures, see
+<code><a href="../articles/composition-variable.html">vignette("composition-variable", package = "timecoda")</a></code>.</p>
 </div>
 <div class="section level2">
-<h2 id="model-an-outcome-from-the-composition">Model an outcome from the composition<a class="anchor" aria-label="anchor" href="#model-an-outcome-from-the-composition"></a>
+<h2 id="modelling-an-outcome-from-the-composition">Modelling an outcome from the composition<a class="anchor" aria-label="anchor" href="#modelling-an-outcome-from-the-composition"></a>
 </h2>
-<p>To model an outcome from the composition, use <code><a href="../reference/comp_iv.html">comp_iv()</a></code>.
-To read the fit, use <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>.</p>
-<p>In <code><a href="../reference/comp_iv.html">comp_iv()</a></code>, the parts are converted into isometric
-log-ratio (ILR) coordinates and the outcome is fitted on those
-coordinates. You name the fitting engine with <code>model</code>.</p>
-<p>The example here fits <code>"glm"</code>, and <code>"lm"</code> works
-the same way. For the remaining engines, see
-<code><a href="../articles/advanced-models.html">vignette("advanced-models", package = "timecoda")</a></code>.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<p>With <code>cd</code> declared, we can test whether daily time use is
+associated with obesity. Here we fit a logistic regression with
+<code><a href="../reference/comp_iv.html">comp_iv()</a></code>, which handles the pivot ILR transformation
+behind the scenes (linear, multilevel, survival, ordinal, and robust
+engines use the same interface; see
+<code><a href="../articles/advanced-models.html">vignette("advanced-models", package = "timecoda")</a></code>):</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_ob</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/comp_iv.html">comp_iv</a></span><span class="op">(</span>comp <span class="op">=</span> <span class="va">cd</span>, outcome <span class="op">=</span> <span class="st">"obesity"</span>, model <span class="op">=</span> <span class="st">"glm"</span>,</span>
 <span>                  family <span class="op">=</span> <span class="st">"binomial"</span><span class="op">)</span></span>
 <span><span class="va">fit_ob</span></span>
@@ -698,7 +693,11 @@ the same way. For the remaining engines, see
 <span><span class="co">#&gt; Degrees of Freedom: 299 Total (i.e. Null);  296 Residual</span></span>
 <span><span class="co">#&gt; Null Deviance:       355.8 </span></span>
 <span><span class="co">#&gt; Residual Deviance: 322   AIC: 330</span></span></code></pre></div>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<p>Printing the fit shows the underlying model call in the initial pivot
+basis. The summary runs an order-invariant omnibus Wald test across all
+coordinates and rotates the pivot basis <span class="math inline">D</span> times so each part appears first against
+the remaining <span class="math inline">D - 1</span> parts:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_ob</span><span class="op">)</span></span>
 <span><span class="co">#&gt; &lt;comp_iv&gt; compositional generalized linear model (binomial)</span></span>
 <span><span class="co">#&gt;   Parts: Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep (total = 1440)</span></span>
@@ -714,25 +713,22 @@ the same way. For the remaining engines, see
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> LPA vs remaining   Light PA                   0.982    0.506     1.91  9.58<span style="color: #949494;">e</span><span style="color: #BB0000;">-1</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> SB vs remaining    Sedentary behaviour        2.98     1.16      7.65  2.34<span style="color: #949494;">e</span><span style="color: #BB0000;">-2</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> SPT vs remaining   Sleep                      0.683    0.273     1.71  4.15<span style="color: #949494;">e</span><span style="color: #BB0000;">-1</span></span></span></code></pre></div>
-<p>The summary reports, for each part, a “part vs remaining” odds ratio
-with its 95% confidence interval. A value below 1, as for
-moderate-to-vigorous activity, means that a day in which the part is
-larger relative to the rest is associated with lower odds of obesity. A
-unit of a log-ratio coordinate has no direct reading in minutes. The
-reallocation estimates later in this vignette express the same model as
-minutes moved between parts.</p>
-<p>See more in <a href="composition-predictor.html">Modelling an outcome
-from a composition</a>.</p>
+<p>An odds ratio below 1, as for <code>MVPA</code>, means that a day
+with more <code>MVPA</code> relative to the rest of the day is
+associated with lower odds of obesity. Because a one-unit change in a
+log-ratio coordinate has no direct reading in minutes, we use
+reallocation estimates next to express the same model on the minute
+scale. See
+<code><a href="../articles/composition-predictor.html">vignette("composition-predictor", package = "timecoda")</a></code> for
+full model interpretation and response surfaces.</p>
 </div>
 <div class="section level2">
-<h2 id="check-the-fit">Check the fit<a class="anchor" aria-label="anchor" href="#check-the-fit"></a>
+<h2 id="checking-the-fit">Checking the fit<a class="anchor" aria-label="anchor" href="#checking-the-fit"></a>
 </h2>
-<p>To judge whether the model fits, use <code><a href="../reference/fit_check.html">fit_check()</a></code>. It
-returns a <code>fit_check</code> object with the test statistics of the
-residual diagnostics chosen for the model class.</p>
-<p>Here these are the simulated quantile residuals of the suggested
-package <code>DHARMa</code>.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<p>Before interpreting predictions, we check residual diagnostics with
+<code><a href="../reference/fit_check.html">fit_check()</a></code>, which uses simulated quantile residuals from
+<code>DHARMa</code> for linear and generalized linear models:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/fit_check.html">fit_check</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_ob</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L = G$L,</span></span>
 <span><span class="co">#&gt; : Fitting terminated with step failure - check results carefully</span></span>
@@ -746,42 +742,28 @@ package <code>DHARMa</code>.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> KS uniformity    0.038<span style="text-decoration: underline;">1</span>    <span style="color: #BB0000;">NA</span>   0.777</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Dispersion       1.01      <span style="color: #BB0000;">NA</span>   0.976</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> Outliers         0         <span style="color: #BB0000;">NA</span>   1</span></span></code></pre></div>
-<p>None of the three p-values here is small, and thus we find no
-evidence of a lack of fit.</p>
-<p>See more in <a href="composition-predictor.html">Modelling an outcome
-from a composition</a>.</p>
+<p>None of the diagnostic checks flags a lack of fit.</p>
 </div>
 <div class="section level2">
-<h2 id="predict-a-reallocation">Predict a reallocation<a class="anchor" aria-label="anchor" href="#predict-a-reallocation"></a>
+<h2 id="estimating-time-reallocations">Estimating time reallocations<a class="anchor" aria-label="anchor" href="#estimating-time-reallocations"></a>
 </h2>
-<p>To express the model’s result as time moved between behaviours, use
-<code><a href="../reference/predict_realloc.html">predict_realloc()</a></code>. It compares a reallocated composition
-with a reference composition and returns the estimate on the model’s
-effect scale, here an odds ratio. To tabulate the estimates, use
-<code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>. To format them for publication, use
-<code><a href="../reference/pub_ready.html">pub_ready()</a></code>.</p>
-<p>In a reallocation question, we ask how an outcome differs when a
-fixed amount of time is moved from one behaviour to another (e.g., 15
-minutes from sedentary behaviour to moderate-to-vigorous activity).</p>
-<p>That change is estimated for a fixed duration moved between two
-parts, with the remaining parts held constant, using the compositional
-isotemporal substitution model.</p>
-<p>By default, a reallocation estimate starts from the reference
-composition, which is the closed geometric mean of the sample in
-minutes.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<p>To express the logistic model in minutes, we use compositional
+isotemporal substitution via <code><a href="../reference/predict_realloc.html">predict_realloc()</a></code>. By default,
+reallocations start from the sample’s closed geometric mean and return
+relative contrasts on the model’s effect scale (here, an odds ratio).
+Moving 15 minutes from sedentary behaviour to moderate-to-vigorous
+activity, holding sleep and light activity constant, is associated with
+lower odds of obesity:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/predict_realloc.html">predict_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_ob</span>, from <span class="op">=</span> <span class="st">"SB"</span>, to <span class="op">=</span> <span class="st">"MVPA"</span>, delta <span class="op">=</span> <span class="fl">15</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 10</span></span></span>
 <span><span class="co">#&gt;   from  to    delta estimate std.error    df conf.low conf.high statistic</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> SB    MVPA     15    0.758    0.040<span style="text-decoration: underline;">0</span>   <span style="color: #BB0000;">Inf</span>    0.683     0.840     -<span style="color: #BB0000;">5.26</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: p.value &lt;dbl&gt;</span></span></span></code></pre></div>
-<p>The output shows an odds ratio below 1, so the reallocated day is
-associated with lower odds of obesity than the reference day.</p>
-<p>To get the predicted probability of obesity at each composition in
-place of the ratio, set <code>type = "absolute"</code> in
-<code><a href="../reference/predict_realloc.html">predict_realloc()</a></code>.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<p>To see the predicted probability of obesity at both compositions
+instead of the odds ratio, switch to <code>type = "absolute"</code>:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/predict_realloc.html">predict_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_ob</span>, from <span class="op">=</span> <span class="st">"SB"</span>, to <span class="op">=</span> <span class="st">"MVPA"</span>, delta <span class="op">=</span> <span class="fl">15</span>,</span>
 <span>                type <span class="op">=</span> <span class="st">"absolute"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 8</span></span></span>
@@ -789,13 +771,13 @@ place of the ratio, set <code>type = "absolute"</code> in
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>        0    0.258    0.027<span style="text-decoration: underline;">1</span>   <span style="color: #BB0000;">Inf</span>    0.209     0.315</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> SB    MVPA     15    0.209    0.026<span style="text-decoration: underline;">9</span>   <span style="color: #BB0000;">Inf</span>    0.161     0.266</span></span></code></pre></div>
-<p>To estimate several magnitudes at once, give <code>delta</code> a
-vector.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<p>You can also evaluate several reallocation magnitudes in one call by
+passing a vector to <code>delta</code>, then format the sweep with
+<code><a href="../reference/pub_ready.html">pub_ready()</a></code>:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predict_realloc.html">predict_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_ob</span>, from <span class="op">=</span> <span class="st">"SB"</span>, to <span class="op">=</span> <span class="st">"MVPA"</span>,</span>
-<span>                     delta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">20</span>, <span class="fl">30</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">r</span><span class="op">)</span></span>
+<span>                     delta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">20</span>, <span class="fl">30</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">r</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Time-reallocation effects: Odds ratio versus the reference composition</span></span>
 <span><span class="co">#&gt;   3 reallocations of 10, 20, 30; 95% confidence intervals</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -805,10 +787,7 @@ vector.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> MVPA  SB    Moderate-to-… Sedentary…    10    0.822    0.764     0.884 1.51<span style="color: #949494;">e</span><span style="color: #BB0000;">-7</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> MVPA  SB    Moderate-to-… Sedentary…    20    0.704    0.618     0.802 1.36<span style="color: #949494;">e</span><span style="color: #BB0000;">-7</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> MVPA  SB    Moderate-to-… Sedentary…    30    0.620    0.519     0.740 1.25<span style="color: #949494;">e</span><span style="color: #BB0000;">-7</span></span></span></code></pre></div>
-<p>In the publication table of the sweep, each magnitude heads a column
-holding its odds ratio and confidence interval, and each odds ratio with
-a p-value below 0.05 is marked with an asterisk.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/pub_ready.html">pub_ready</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">r</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">$</span><span class="va">effects</span></span></code></pre></div>
 <div id="qztpeuonfb" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <style>#qztpeuonfb table {
@@ -1304,39 +1283,28 @@ a p-value below 0.05 is marked with an asterisk.</p>
     </tr></tfoot>
 </table>
 </div>
-<p>See more in <a href="predicting-reallocations.html">Predicting time
-reallocations</a>.</p>
-</div>
-<div class="section level2">
-<h2 id="plot-the-reallocations">Plot the reallocations<a class="anchor" aria-label="anchor" href="#plot-the-reallocations"></a>
-</h2>
-<p>To draw the estimates across magnitudes for every pair of parts, use
-<code><a href="../reference/plot_realloc.html">plot_realloc()</a></code>. The figure shows exactly the estimates that
-<code><a href="../reference/predict_realloc.html">predict_realloc()</a></code> returns for those magnitudes.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<p>To visualize reallocation curves across every pair of behaviours up
+to 60 minutes, pass the fit to <code><a href="../reference/plot_realloc.html">plot_realloc()</a></code>:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_realloc.html">plot_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_ob</span>, delta_max <span class="op">=</span> <span class="fl">60</span><span class="op">)</span></span></code></pre></div>
 <p><img src="timecoda_files/figure-html/realloc-plot-1.png" class="r-plt" alt="Reallocation plot in a lower-triangular grid of six panels, one per pair of parts, each showing the odds ratio of obesity with its confidence ribbon against the minutes reallocated between the two parts, and a dashed reference line at an odds ratio of 1." width="100%"></p>
-<p>The shaded ribbon is the 95% confidence interval, and the dashed
-reference line marks an odds ratio of 1.</p>
-<p>See more in <a href="predicting-reallocations.html">Predicting time
-reallocations</a>.</p>
+<p>See
+<code><a href="../articles/predicting-reallocations.html">vignette("predicting-reallocations", package = "timecoda")</a></code>
+for asymmetric reversals, one-to-all schemes, custom reference
+compositions, and subgroup moderation.</p>
 </div>
 <div class="section level2">
-<h2 id="find-the-optimal-composition">Find the optimal composition<a class="anchor" aria-label="anchor" href="#find-the-optimal-composition"></a>
+<h2 id="finding-the-optimal-composition">Finding the optimal composition<a class="anchor" aria-label="anchor" href="#finding-the-optimal-composition"></a>
 </h2>
-<p>To find the compositions with the best predicted outcome (the
-Goldilocks zone), use <code><a href="../reference/optimal_composition.html">optimal_composition()</a></code>. It searches a
-grid of compositions inside a region of the sample’s compositions, and
-its zone holds the candidates whose predictions rank among the best. To
-draw the search, use <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>.</p>
-<p>Because the model fitted here is linear in the composition, its
-predictions keep improving in one direction, and the best days lie on
-the edge of the region covered by the search. As the printed note says,
-the zone therefore marks where that region ends. A model with curvature
-(<code>curvature = TRUE</code>) can hold an optimum inside the region.
-For a worked example that fits such a model, see the article on the
-Goldilocks zone.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<p>To identify daily compositions with the best predicted outcome (the
+Goldilocks zone), we search a feasible grid inside the empirical sample
+range with <code><a href="../reference/optimal_composition.html">optimal_composition()</a></code>. Because
+<code>fit_ob</code> is linear in ILR coordinates, predictions keep
+improving in one direction and the zone lands on the edge of the
+feasible region; refitting with <code>curvature = TRUE</code> allows an
+interior optimum (see
+<code><a href="../articles/optimal-composition.html">vignette("optimal-composition", package = "timecoda")</a></code>).</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">opt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/optimal_composition.html">optimal_composition</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_ob</span>, direction <span class="op">=</span> <span class="st">"min"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #0000BB;">"obesity"</span> is linear in the composition, so its best predicted outcome lies on</span></span>
 <span><span class="co">#&gt; the edge of the region.</span></span>
@@ -1344,30 +1312,40 @@ Goldilocks zone.</p>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> A curved surface can hold an interior optimum: refit with `curvature = TRUE`</span></span>
 <span><span class="co">#&gt;   (or `ilr()^2 + I(ilr()^2)` in a formula).</span></span>
 <span><span class="va">opt</span></span>
-<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search over Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep (total = 1440)</span></span>
-<span><span class="co">#&gt;   Region: per-part box of the mean +/- 3 SD; candidates on multiples of 10</span></span>
-<span><span class="co">#&gt;   Limits: MVPA 0.1 to 180.0, LPA 51.8 to 503.3, SB 315.6 to 1013.4, SPT 239.9 to 809.4</span></span>
-<span><span class="co">#&gt;   4 of 8 box limits are the observed minimum or maximum of their part (lower: MVPA, LPA, SB, SPT)</span></span>
-<span><span class="co">#&gt;   Scale: Odds ratio versus the reference day</span></span>
-<span><span class="co">#&gt;   Zone rule: obesity, the best 5% of predictions (lower is better)</span></span>
-<span><span class="co">#&gt;   36,611 candidate compositions inside the region</span></span>
-<span><span class="co">#&gt;   Zone for obesity: 1831 compositions (centre [min; max])</span></span>
-<span><span class="co">#&gt;     Moderate-to-vigorous PA  151.2 [90.0; 170.0]</span></span>
-<span><span class="co">#&gt;     Light PA                 262.2 [60.0; 500.0]</span></span>
-<span><span class="co">#&gt;     Sedentary behaviour      367.9 [320.0; 450.0]</span></span>
-<span><span class="co">#&gt;     Sleep                    658.7 [400.0; 800.0]</span></span>
-<span><span class="co">#&gt;     A fit linear in the composition has no interior optimum: the zone is the edge of the region in the direction of benefit.</span></span>
-<span><span class="co">#&gt;     Refit with `curvature = TRUE` for a surface that can hold one.</span></span>
-<span><span class="co">#&gt;   Gain from the reference day to the zone centre (95% CI):</span></span>
-<span><span class="co">#&gt;     obesity: Odds ratio 0.187 [0.0842; 0.414], p = 3.65e-05</span></span></code></pre></div>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<span><span class="co">#&gt; &lt;optimal_comp&gt; Goldilocks-zone search: obesity</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Search</span></span>
+<span><span class="co">#&gt;   Parts       Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep</span></span>
+<span><span class="co">#&gt;               (total = 1440)</span></span>
+<span><span class="co">#&gt;   Region      per-part box of the mean +/- 3 SD</span></span>
+<span><span class="co">#&gt;   Grid        multiples of 10; 36,611 candidates</span></span>
+<span><span class="co">#&gt;   Scale       Odds ratio versus the reference day</span></span>
+<span><span class="co">#&gt;   Zone rule   best 5% of predictions, lower is better</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Region limits</span></span>
+<span><span class="co">#&gt;                              lower     upper</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA      0.1*    180.0</span></span>
+<span><span class="co">#&gt;   Light PA                    51.8*    503.3</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour        315.6*   1013.4</span></span>
+<span><span class="co">#&gt;   Sleep                      239.9*    809.4</span></span>
+<span><span class="co">#&gt;   * the part's observed minimum</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Zone for obesity: 1,831 compositions (centre [min; max])</span></span>
+<span><span class="co">#&gt;   Moderate-to-vigorous PA   151.2  [ 90.0; 170.0]</span></span>
+<span><span class="co">#&gt;   Light PA                  262.2  [ 60.0; 500.0]</span></span>
+<span><span class="co">#&gt;   Sedentary behaviour       367.9  [320.0; 450.0]</span></span>
+<span><span class="co">#&gt;   Sleep                     658.7  [400.0; 800.0]</span></span>
+<span><span class="co">#&gt;   A fit linear in the composition has no interior optimum: the zone is the edge</span></span>
+<span><span class="co">#&gt;   of the region in the direction of benefit.</span></span>
+<span><span class="co">#&gt;   Refit with `curvature = TRUE` for a surface that can hold one.</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Gain from the reference day to the zone centre (95% CI)</span></span>
+<span><span class="co">#&gt;   obesity   Odds ratio   0.187  [0.0842; 0.414]  p = 3.65e-05</span></span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">opt</span><span class="op">)</span></span></code></pre></div>
 <p><img src="timecoda_files/figure-html/optimal-plot-1.png" class="r-plt" alt="Four ternary plots of the search, one for each set of three parts with the fourth part held at the zone centre. Inside the searched region, tiles are coloured by the odds ratio of obesity against the reference day, a red outline surrounds the zone and a red point marks its centre." width="100%"><img src="timecoda_files/figure-html/optimal-plot-2.png" class="r-plt" alt="Four ternary plots of the search, one for each set of three parts with the fourth part held at the zone centre. Inside the searched region, tiles are coloured by the odds ratio of obesity against the reference day, a red outline surrounds the zone and a red point marks its centre." width="100%"><img src="timecoda_files/figure-html/optimal-plot-3.png" class="r-plt" alt="Four ternary plots of the search, one for each set of three parts with the fourth part held at the zone centre. Inside the searched region, tiles are coloured by the odds ratio of obesity against the reference day, a red outline surrounds the zone and a red point marks its centre." width="100%"><img src="timecoda_files/figure-html/optimal-plot-4.png" class="r-plt" alt="Four ternary plots of the search, one for each set of three parts with the fourth part held at the zone centre. Inside the searched region, tiles are coloured by the odds ratio of obesity against the reference day, a red outline surrounds the zone and a red point marks its centre." width="100%"></p>
-<p>In each panel the fourth part is held at the zone centre, the fill
-shows the odds ratio against the reference day, the red outline marks
-the zone and the red point marks its centre.</p>
-<p>See more in <a href="optimal-composition.html">Finding the Goldilocks
-zone</a>.</p>
+<p>In each ternary panel, the fourth behaviour is held at the zone
+centre (red point), and the red outline marks the zone boundary.</p>
 </div>
 <div class="section level2">
 <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a>
@@ -1375,23 +1353,21 @@ zone</a>.</p>
 <ul>
 <li>
 <code><a href="../articles/composition-variable.html">vignette("composition-variable", package = "timecoda")</a></code>:
-declaring and describing a composition in full.</li>
+validating data, imputing zeroes, flagging multivariate outliers, and
+descriptive plots.</li>
 <li>
 <code><a href="../articles/composition-predictor.html">vignette("composition-predictor", package = "timecoda")</a></code>:
 modelling an outcome from a composition and checking the fit.</li>
 <li>
 <code><a href="../articles/predicting-reallocations.html">vignette("predicting-reallocations", package = "timecoda")</a></code>:
-reallocation estimates, their publication table and the reallocation
-figure.</li>
-<li>
-<code><a href="../articles/advanced-models.html">vignette("advanced-models", package = "timecoda")</a></code>: the
-other model engines, the formula interface, moderation and the total as
-a covariate.</li>
+reallocation estimates, publication tables, and transfer curves.</li>
 <li>
 <code><a href="../articles/optimal-composition.html">vignette("optimal-composition", package = "timecoda")</a></code>:
-the search for the Goldilocks zone, the compositions with the best
-predicted outcome.</li>
-<li>Check the help page of each function for every argument and runnable
+single- and multi-outcome Goldilocks-zone optimization.</li>
+<li>
+<code><a href="../articles/advanced-models.html">vignette("advanced-models", package = "timecoda")</a></code>:
+multilevel, survival, ordinal, robust, and formula-based models.</li>
+<li>Check each function’s help page for full argument lists and runnable
 examples.</li>
 </ul>
 </div>

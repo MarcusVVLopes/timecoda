@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">timecoda</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.6.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.6.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,32 +70,27 @@
       <h1>Predicting time reallocations</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/MarcusVVLopes/timecoda/blob/v0.6.0/vignettes/predicting-reallocations.Rmd" class="external-link"><code>vignettes/predicting-reallocations.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/MarcusVVLopes/timecoda/blob/main/vignettes/predicting-reallocations.Rmd" class="external-link"><code>vignettes/predicting-reallocations.Rmd</code></a></small>
       <div class="d-none name"><code>predicting-reallocations.Rmd</code></div>
     </div>
 
     
     
+<p>Pivot ILR slopes from <code><a href="../reference/comp_iv.html">comp_iv()</a></code> are hard to interpret
+directly in minutes. Compositional isotemporal substitution solves this
+by comparing two whole days: a reference composition and the same day
+with <code>delta</code> minutes shifted from one behaviour to another
+while holding the remaining behaviours fixed (Dumuid, Stanford, Pedišić,
+et al., 2018; Dumuid et al., 2019; Dumuid et al., 2020). Because these
+estimates come from observational regression models, they compare
+expected outcomes across different compositions rather than causal
+within-person changes.</p>
+<p>We start by fitting a linear model for <code>zbmi</code> and a
+logistic model for <code>obesity</code> on <code>timeuse</code>:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://marcusvvlopes.github.io/timecoda/">timecoda</a></span><span class="op">)</span></span></code></pre></div>
-<div class="section level2">
-<h2 id="reallocating-time">Reallocating time<a class="anchor" aria-label="anchor" href="#reallocating-time"></a>
-</h2>
-<p><code><a href="../reference/predict_realloc.html">predict_realloc()</a></code> takes a model fitted by
-<code><a href="../reference/comp_iv.html">comp_iv()</a></code> and estimates the difference in an outcome
-associated with moving a stated number of minutes from one part of a
-composition to another.</p>
-<p>The examples use the bundled <code>timeuse</code> data, with the
-composition declared once as <code>cd</code>. For a description of these
-data, see
-<code><a href="../articles/composition-variable.html">vignette("composition-variable", package = "timecoda")</a></code>. Two
-models are fitted to it. For fitting these models, see
-<code><a href="../articles/composition-predictor.html">vignette("composition-predictor", package = "timecoda")</a></code>.
-<code>fit_bmi</code> is a linear model of the body-mass-index z-score
-(<code>zbmi</code>), and <code>fit_ob</code> is a logistic regression of
-an obesity indicator (<code>obesity</code>).</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">cd</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/declare_composition.html">declare_composition</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://marcusvvlopes.github.io/timecoda/">timecoda</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">cd</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/declare_composition.html">declare_composition</a></span><span class="op">(</span></span>
 <span>  data    <span class="op">=</span> <span class="va">timeuse</span>,</span>
 <span>  parts   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"MVPA"</span>, <span class="st">"LPA"</span>, <span class="st">"SB"</span>, <span class="st">"SPT"</span><span class="op">)</span>,</span>
 <span>  closure <span class="op">=</span> <span class="fl">1440</span>,</span>
@@ -110,40 +105,37 @@ an obesity indicator (<code>obesity</code>).</p>
 <span><span class="va">fit_bmi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/comp_iv.html">comp_iv</a></span><span class="op">(</span>comp <span class="op">=</span> <span class="va">cd</span>, outcome <span class="op">=</span> <span class="st">"zbmi"</span>, model <span class="op">=</span> <span class="st">"lm"</span><span class="op">)</span></span>
 <span><span class="va">fit_ob</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/comp_iv.html">comp_iv</a></span><span class="op">(</span>comp <span class="op">=</span> <span class="va">cd</span>, outcome <span class="op">=</span> <span class="st">"obesity"</span>, model <span class="op">=</span> <span class="st">"glm"</span>,</span>
 <span>                   family <span class="op">=</span> <span class="st">"binomial"</span><span class="op">)</span></span></code></pre></div>
-</div>
 <div class="section level2">
-<h2 id="part-1--what-a-reallocation-estimate-is">Part 1. What a reallocation estimate is<a class="anchor" aria-label="anchor" href="#part-1--what-a-reallocation-estimate-is"></a>
+<h2 id="pairwise-reallocations">Pairwise reallocations<a class="anchor" aria-label="anchor" href="#pairwise-reallocations"></a>
 </h2>
-<div class="section level3">
-<h3 id="two-days-compared">Two days compared<a class="anchor" aria-label="anchor" href="#two-days-compared"></a>
-</h3>
-<p>A reallocation estimate compares two whole days. One is the reference
-composition, a typical day for the sample, and the other is the same day
-with <code>delta</code> minutes moved from one part, the donor, to
-another, the receiver, while the remaining parts keep their reference
-values. The estimate is the difference between the outcomes the model
-predicts for the two days (Dumuid, Stanford, Pedišić, et al., 2018;
-Dumuid et al., 2020). This approach is the compositional isotemporal
-substitution model of Dumuid et al. (2019).</p>
-<p>The difference is taken on the link scale of the model. For a linear
-model, which has the identity link, it is a mean difference in the
-outcome itself, here in z-BMI units. For a logistic regression, which
-has the logit link, it is a difference in log-odds, and exponentiating
-it gives an odds ratio, that is, the odds of the outcome on the
-reallocated day divided by the odds on the reference day.</p>
-<p>The estimates are associations in observational data. Each compares
-the outcome predicted for two different compositions across the sample,
-and none measures the change that would follow if a person altered their
-own day (Dumuid, Stanford, Pedišić, et al., 2018).</p>
-</div>
-<div class="section level3">
-<h3 id="the-reference-composition">The reference composition<a class="anchor" aria-label="anchor" href="#the-reference-composition"></a>
-</h3>
-<p>The reference composition is the closed geometric mean of the sample,
-and every estimate in this vignette is anchored at it (Dumuid, Stanford,
-Pedišić, et al., 2018; Dumuid et al., 2020) except those in the section
-on a chosen reference day. To see the reference composition, print the
-fit.</p>
+<p>To estimate how obesity odds differ when 10, 20, or 30 minutes move
+from sedentary behaviour (<code>from = "SB"</code>) to
+moderate-to-vigorous activity (<code>to = "MVPA"</code>), pass the fit
+to <code><a href="../reference/predict_realloc.html">predict_realloc()</a></code>:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predict_realloc.html">predict_realloc</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">fit_ob</span>,</span>
+<span>  from   <span class="op">=</span> <span class="st">"SB"</span>,</span>
+<span>  to     <span class="op">=</span> <span class="st">"MVPA"</span>,</span>
+<span>  delta  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">20</span>, <span class="fl">30</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">r</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Time-reallocation effects: Odds ratio versus the reference composition</span></span>
+<span><span class="co">#&gt;   3 reallocations of 10, 20, 30; 95% confidence intervals</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 9</span></span></span>
+<span><span class="co">#&gt;   to    from  to_label      from_label delta estimate conf.low conf.high p.value</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> MVPA  SB    Moderate-to-… Sedentary…    10    0.822    0.764     0.884 1.51<span style="color: #949494;">e</span><span style="color: #BB0000;">-7</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> MVPA  SB    Moderate-to-… Sedentary…    20    0.704    0.618     0.802 1.36<span style="color: #949494;">e</span><span style="color: #BB0000;">-7</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> MVPA  SB    Moderate-to-… Sedentary…    30    0.620    0.519     0.740 1.25<span style="color: #949494;">e</span><span style="color: #BB0000;">-7</span></span></span></code></pre></div>
+<p>Moving 10 minutes from <code>SB</code> to <code>MVPA</code> is
+associated with roughly 18% lower odds of obesity (OR = 0.822) relative
+to the reference day, and each additional 10 minutes brings a smaller
+multiplicative drop because the model operates on log-ratios. Note that
+per-row p-values are unadjusted for multiple testing.</p>
+<p>By default, every reallocation is anchored at the sample’s closed
+geometric mean, which is printed with the fit:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">fit_ob</span><span class="op">)</span></span>
 <span><span class="co">#&gt; &lt;timecoda_fit&gt; compositional generalized linear model (binomial)</span></span>
@@ -161,63 +153,23 @@ fit.</p>
 <span><span class="co">#&gt; Degrees of Freedom: 299 Total (i.e. Null);  296 Residual</span></span>
 <span><span class="co">#&gt; Null Deviance:       355.8 </span></span>
 <span><span class="co">#&gt; Residual Deviance: 322   AIC: 330</span></span></code></pre></div>
-<p>Because both fits share the declared composition,
-<code>fit_bmi</code> has the same reference composition. The reference
-day holds only 28.1 minutes of moderate-to-vigorous activity, so a
-transfer of 28.1 minutes or more out of that part leaves it at zero or
-below (see the section on invalid transfers in Part 2).</p>
-</div>
-<div class="section level3">
-<h3 id="what-predict_realloc-does">What <code>predict_realloc()</code> does<a class="anchor" aria-label="anchor" href="#what-predict_realloc-does"></a>
-</h3>
-<p>A call to <code><a href="../reference/predict_realloc.html">predict_realloc()</a></code> runs six steps.</p>
+<p>Here, the reference day contains only 28.1 minutes of
+<code>MVPA</code>, which sets an upper bound on how many minutes can be
+taken out of <code>MVPA</code>. Behind the scenes,
+<code><a href="../reference/predict_realloc.html">predict_realloc()</a></code> builds each reallocated day, transforms
+both compositions into the fit’s ILR basis on an <code>emmeans</code>
+reference grid, and contrasts them on the link scale before
+back-transforming:</p>
 <p><img src="realloc-pipeline.svg" class="r-plt" alt="Flowchart of the predict_realloc() pipeline: take the reference composition stored in the fit, build each reallocated composition by moving delta minutes from one part to another, check that every part stays positive with an invalid transfer handled by on_invalid, express every composition in ILR coordinates on an emmeans reference grid with covariates averaged, contrast each reallocated composition against the reference on the link scale or, when type is absolute, predict the response at each composition, back-transform to the model's effect measure, and return a realloc tibble read by summary(), pub_ready() and plot_realloc()." width="82%"></p>
 </div>
-<div class="section level3">
-<h3 id="a-complete-call">A complete call<a class="anchor" aria-label="anchor" href="#a-complete-call"></a>
-</h3>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predict_realloc.html">predict_realloc</a></span><span class="op">(</span></span>
-<span>  object <span class="op">=</span> <span class="va">fit_ob</span>,</span>
-<span>  from   <span class="op">=</span> <span class="st">"SB"</span>,</span>
-<span>  to     <span class="op">=</span> <span class="st">"MVPA"</span>,</span>
-<span>  delta  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">20</span>, <span class="fl">30</span><span class="op">)</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="reading-the-summary">Reading the summary<a class="anchor" aria-label="anchor" href="#reading-the-summary"></a>
-</h3>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">r</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Time-reallocation effects: Odds ratio versus the reference composition</span></span>
-<span><span class="co">#&gt;   3 reallocations of 10, 20, 30; 95% confidence intervals</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 9</span></span></span>
-<span><span class="co">#&gt;   to    from  to_label      from_label delta estimate conf.low conf.high p.value</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> MVPA  SB    Moderate-to-… Sedentary…    10    0.822    0.764     0.884 1.51<span style="color: #949494;">e</span><span style="color: #BB0000;">-7</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> MVPA  SB    Moderate-to-… Sedentary…    20    0.704    0.618     0.802 1.36<span style="color: #949494;">e</span><span style="color: #BB0000;">-7</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> MVPA  SB    Moderate-to-… Sedentary…    30    0.620    0.519     0.740 1.25<span style="color: #949494;">e</span><span style="color: #BB0000;">-7</span></span></span></code></pre></div>
-<p>Each <code>p.value</code> comes from a test of the null hypothesis
-that the odds ratio in its row equals 1, that is, that the odds of
-obesity do not differ between the reallocated day and the reference day.
-The p-values are not adjusted for the number of rows.</p>
-<p>We read an odds ratio of 0.822 for 10 minutes as odds of obesity
-about 18% lower on the reallocated day than on the reference day. Each
-further 10 minutes multiplies the odds ratio by a factor closer to 1,
-because the model works on log-ratios.</p>
-</div>
-</div>
 <div class="section level2">
-<h2 id="part-2--the-arguments-in-turn">Part 2. The arguments in turn<a class="anchor" aria-label="anchor" href="#part-2--the-arguments-in-turn"></a>
+<h2 id="asymmetry-reversals-and-invalid-transfers">Asymmetry, reversals, and invalid transfers<a class="anchor" aria-label="anchor" href="#asymmetry-reversals-and-invalid-transfers"></a>
 </h2>
-<div class="section level3">
-<h3 id="direction-and-size">Direction and size<a class="anchor" aria-label="anchor" href="#direction-and-size"></a>
-</h3>
-<p>To reverse the transfer, swap <code>from</code> and <code>to</code>,
-here moving time from moderate-to-vigorous activity to sedentary
-behaviour.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<p>Reversing the transfer—moving time out of <code>MVPA</code> into
+<code>SB</code>—shows the classic asymmetry of compositional
+substitution (Dumuid, Stanford, Pedišić, et al., 2018; Dumuid et al.,
+2020):</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/predict_realloc.html">predict_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_ob</span>, from <span class="op">=</span> <span class="st">"MVPA"</span>, to <span class="op">=</span> <span class="st">"SB"</span>, delta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">20</span>, <span class="fl">30</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 10</span></span></span>
 <span><span class="co">#&gt;   from  to    delta estimate std.error    df conf.low conf.high statistic</span></span>
@@ -226,25 +178,36 @@ behaviour.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> MVPA  SB       20     2.17    0.325    <span style="color: #BB0000;">Inf</span>     1.61      2.91      5.16</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> MVPA  SB       30    <span style="color: #BB0000;">NA</span>      <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>   </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: p.value &lt;dbl&gt;</span></span></span></code></pre></div>
-<p>The reversed estimate is not the reciprocal of the original. Moving
-10 minutes into moderate-to-vigorous activity gave an odds ratio of
-0.822, whose reciprocal is about 1.22, whereas moving 10 minutes out of
-it gives 1.32, because removing 10 of 28.1 minutes is a larger relative
-change than adding 10 to them. Dumuid et al. (2020) note that estimated
-differences need not be symmetric when the same duration is added to or
-taken from a part, and Dumuid, Stanford, Pedišić, et al. (2018) report
-such asymmetry for adiposity.</p>
-<p>You can also reverse the transfer with a negative <code>delta</code>.
-The estimates for the original <code>from</code> and <code>to</code>
-with negative magnitudes are those of the swapped call.</p>
+<p>Moving 10 minutes out of <code>MVPA</code> gives an odds ratio of
+1.32—larger than the reciprocal of 0.822 (<span class="math inline">\approx 1.22</span>)—because subtracting 10 minutes
+from 28.1 is a much larger relative change than adding 10. (Passing
+negative values to <code>delta</code> with the original
+<code>from</code> and <code>to</code> produces the same reversed
+estimates.)</p>
+<p>In that table, the 30-minute row returns <code>NA</code> because
+subtracting 30 minutes from 28.1 drives <code>MVPA</code> below zero. By
+default (<code>on_invalid = "na"</code>), invalid transfers stay in the
+output as missing rows so multi-step sweeps do not fail midway. You can
+drop them instead with <code>on_invalid = "omit"</code>, or halt
+immediately with <code>on_invalid = "error"</code>:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/predict_realloc.html">predict_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_ob</span>, from <span class="op">=</span> <span class="st">"MVPA"</span>, to <span class="op">=</span> <span class="st">"SB"</span>, delta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">15</span>, <span class="fl">60</span><span class="op">)</span>,</span>
+<span>                on_invalid <span class="op">=</span> <span class="st">"omit"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 10</span></span></span>
+<span><span class="co">#&gt;   from  to    delta estimate std.error    df conf.low conf.high statistic</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> MVPA  SB       15     1.61     0.149   <span style="color: #BB0000;">Inf</span>     1.35      1.93      5.18</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: p.value &lt;dbl&gt;</span></span></span></code></pre></div>
+<p>Transfers that leave a part strictly positive but very close to zero
+pass this check, though predicted outcomes grow rapidly near the simplex
+boundary (Dumuid et al., 2020).</p>
 </div>
-<div class="section level3">
-<h3 id="all-pairs-at-once">All pairs at once<a class="anchor" aria-label="anchor" href="#all-pairs-at-once"></a>
-</h3>
-<p>To use every ordered pair of parts, omit <code>from</code> and
-<code>to</code>. This gives <code>D (D - 1)</code> reallocations for a
-composition of <code>D</code> parts.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="section level2">
+<h2 id="reallocation-schemes">Reallocation schemes<a class="anchor" aria-label="anchor" href="#reallocation-schemes"></a>
+</h2>
+<p>When you omit both <code>from</code> and <code>to</code>,
+<code><a href="../reference/predict_realloc.html">predict_realloc()</a></code> evaluates all <span class="math inline">D(D - 1)</span> ordered pairs at once:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/predict_realloc.html">predict_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_ob</span>, delta <span class="op">=</span> <span class="fl">15</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 12 × 10</span></span></span>
 <span><span class="co">#&gt;    from  to    delta estimate std.error    df conf.low conf.high statistic</span></span>
@@ -262,17 +225,12 @@ composition of <code>D</code> parts.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">11</span> LPA   SPT      15    0.991    0.025<span style="text-decoration: underline;">4</span>   <span style="color: #BB0000;">Inf</span>    0.943     1.04     -<span style="color: #BB0000;">0.342</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">12</span> SB    SPT      15    0.970    0.019<span style="text-decoration: underline;">1</span>   <span style="color: #BB0000;">Inf</span>    0.933     1.01     -<span style="color: #BB0000;">1.57</span> </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: p.value &lt;dbl&gt;</span></span></span></code></pre></div>
-<p>The odds ratios farthest from 1 are in the six transfers that involve
-moderate-to-vigorous activity.</p>
-</div>
-<div class="section level3">
-<h3 id="one-part-against-all-the-others">One part against all the others<a class="anchor" aria-label="anchor" href="#one-part-against-all-the-others"></a>
-</h3>
-<p>To move minutes between one focal part and all the others, set
-<code>scheme = "one-to-all"</code>. The minutes are shared among the
-other parts in proportion to their reference values, so that those parts
-keep their ratios to one another.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<p>In these data, the six transfers involving <code>MVPA</code> produce
+the largest shifts in odds ratios.</p>
+<p>To move time between one focal behaviour and all remaining behaviours
+in proportion to their reference values—preserving the ratios among the
+remaining parts—use <code>scheme = "one-to-all"</code>:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">r_rest</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predict_realloc.html">predict_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_ob</span>, to <span class="op">=</span> <span class="st">"MVPA"</span>, delta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">20</span>, <span class="fl">30</span><span class="op">)</span>,</span>
 <span>                          scheme <span class="op">=</span> <span class="st">"one-to-all"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">r_rest</span><span class="op">)</span></span>
@@ -285,21 +243,14 @@ keep their ratios to one another.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> MVPA  (rest) Moderate-to… All other…    10    0.830    0.771     0.892 4.89<span style="color: #949494;">e</span><span style="color: #BB0000;">-7</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> MVPA  (rest) Moderate-to… All other…    20    0.718    0.632     0.817 4.89<span style="color: #949494;">e</span><span style="color: #BB0000;">-7</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> MVPA  (rest) Moderate-to… All other…    30    0.639    0.536     0.761 4.89<span style="color: #949494;">e</span><span style="color: #BB0000;">-7</span></span></span></code></pre></div>
-<p>The odds ratio for 10 minutes is close to the 0.822 obtained when all
-10 minutes come from sedentary behaviour.</p>
-<p>To make the focal part give minutes to the others, use
-<code>from = "MVPA"</code> in place of <code>to</code>. If neither is
-given, every part in turn is the focal part receiving minutes.</p>
-</div>
-<div class="section level3">
-<h3 id="custom-reallocations">Custom reallocations<a class="anchor" aria-label="anchor" href="#custom-reallocations"></a>
-</h3>
-<p>To reallocate time among three or more parts at once, give
-<code>realloc</code> a named vector of the minutes each part gains or
-loses. The changes must sum to zero, and parts left out keep their
-reference values. <code>realloc</code> cannot be combined with
-<code>from</code>, <code>to</code> or <code>scheme</code>.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<p>To reverse the direction so the focal behaviour gives time to the
+rest, swap <code>to</code> for <code>from = "MVPA"</code>; omitting both
+cycles through every behaviour as the focal receiver.</p>
+<p>For scenarios that shift time across three or more behaviours
+simultaneously, supply a named zero-sum vector (or list of vectors) to
+<code>realloc</code> instead of <code>from</code>, <code>to</code>, or
+<code>scheme</code>:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">r_custom</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predict_realloc.html">predict_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_ob</span>,</span>
 <span>                            realloc <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>SPT <span class="op">=</span> <span class="fl">30</span>, SB <span class="op">=</span> <span class="op">-</span><span class="fl">15</span>, LPA <span class="op">=</span> <span class="op">-</span><span class="fl">15</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">r_custom</span><span class="op">)</span></span>
@@ -310,48 +261,15 @@ reference values. <code>realloc</code> cannot be combined with
 <span><span class="co">#&gt;   to      from     to_label from_label delta estimate conf.low conf.high p.value</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> SPT +30 LPA -15… Sleep +… Light PA …    30    0.961    0.892      1.04   0.302</span></span></code></pre></div>
-<p>The scenario is named in the row by its signed changes,
-<code>SPT +30</code> under <code>to</code> and
-<code>LPA -15, SB -15</code> under <code>from</code>, and
-<code>delta</code> is the 30 minutes moved in total. To estimate several
-scenarios in one call, give a list of such vectors. Each scenario gets
-one row.</p>
 </div>
-<div class="section level3">
-<h3 id="invalid-transfers">Invalid transfers<a class="anchor" aria-label="anchor" href="#invalid-transfers"></a>
-</h3>
-<p>A transfer larger than the donor’s reference minutes drives that part
-to zero or below. To choose how such an invalid transfer is handled, set
-<code>on_invalid</code>. Its default, <code>"na"</code>, keeps the
-transfer without an estimate, and <code>"omit"</code> and
-<code>"error"</code> are the alternatives.</p>
-<p>With <code>"error"</code>, the call halts at the first invalid
-transfer and returns no result.</p>
-<p>With <code>"omit"</code>, the invalid transfer is dropped and the
-valid one returned.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/predict_realloc.html">predict_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_ob</span>, from <span class="op">=</span> <span class="st">"MVPA"</span>, to <span class="op">=</span> <span class="st">"SB"</span>, delta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">15</span>, <span class="fl">60</span><span class="op">)</span>,</span>
-<span>                on_invalid <span class="op">=</span> <span class="st">"omit"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 10</span></span></span>
-<span><span class="co">#&gt;   from  to    delta estimate std.error    df conf.low conf.high statistic</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> MVPA  SB       15     1.61     0.149   <span style="color: #BB0000;">Inf</span>     1.35      1.93      5.18</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: p.value &lt;dbl&gt;</span></span></span></code></pre></div>
-<p>For a sweep over several magnitudes or pairs, use the default or
-<code>"omit"</code>. A single invalid transfer then does not halt the
-whole call.</p>
-<p>A transfer that leaves a part close to zero passes the check,
-although the reallocated composition then lies near the edge of the
-simplex, where predicted outcomes tend towards infinity as a part
-approaches zero (Dumuid et al., 2020).</p>
-</div>
-<div class="section level3">
-<h3 id="relative-and-absolute-output">Relative and absolute output<a class="anchor" aria-label="anchor" href="#relative-and-absolute-output"></a>
-</h3>
-<p>To choose what each row reports, set <code>type</code>. With
-<code>type = "absolute"</code>, each row is instead the model’s
-prediction at that day, on the scale of the outcome.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="section level2">
+<h2 id="relative-contrasts-vs--absolute-predictions">Relative contrasts vs. absolute predictions<a class="anchor" aria-label="anchor" href="#relative-contrasts-vs--absolute-predictions"></a>
+</h2>
+<p>By default (<code>type = "relative"</code>),
+<code><a href="../reference/predict_realloc.html">predict_realloc()</a></code> returns the contrast between the
+reallocated day and the reference day—a mean difference for linear
+models and an odds ratio for logistic models:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/predict_realloc.html">predict_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_bmi</span>, from <span class="op">=</span> <span class="st">"SB"</span>, to <span class="op">=</span> <span class="st">"MVPA"</span>, delta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">20</span>, <span class="fl">30</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 10</span></span></span>
 <span><span class="co">#&gt;   from  to    delta estimate std.error    df conf.low conf.high statistic</span></span>
@@ -360,9 +278,11 @@ prediction at that day, on the scale of the outcome.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> SB    MVPA     20   -<span style="color: #BB0000;">0.374</span>    0.024<span style="text-decoration: underline;">0</span>   296   -<span style="color: #BB0000;">0.422</span>    -<span style="color: #BB0000;">0.327</span>     -<span style="color: #BB0000;">15.6</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> SB    MVPA     30   -<span style="color: #BB0000;">0.513</span>    0.032<span style="text-decoration: underline;">6</span>   296   -<span style="color: #BB0000;">0.577</span>    -<span style="color: #BB0000;">0.449</span>     -<span style="color: #BB0000;">15.8</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: p.value &lt;dbl&gt;</span></span></span></code></pre></div>
-<p>Moving 10 minutes from sedentary behaviour to moderate-to-vigorous
-activity is associated with a z-BMI 0.209 units lower.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<p>Moving 10 minutes from <code>SB</code> to <code>MVPA</code> is
+associated with a 0.209-unit lower mean <code>zbmi</code>. To inspect
+predicted outcomes at each composition directly, switch to
+<code>type = "absolute"</code>:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/predict_realloc.html">predict_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_bmi</span>, from <span class="op">=</span> <span class="st">"SB"</span>, to <span class="op">=</span> <span class="st">"MVPA"</span>,</span>
 <span>                delta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">20</span>, <span class="fl">30</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"absolute"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 8</span></span></span>
@@ -372,12 +292,12 @@ activity is associated with a z-BMI 0.209 units lower.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> SB    MVPA     10  -<span style="color: #BB0000;">0.232</span>     0.053<span style="text-decoration: underline;">9</span>   296   -<span style="color: #BB0000;">0.338</span>   -<span style="color: #BB0000;">0.126</span> </span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> SB    MVPA     20  -<span style="color: #BB0000;">0.397</span>     0.057<span style="text-decoration: underline;">4</span>   296   -<span style="color: #BB0000;">0.510</span>   -<span style="color: #BB0000;">0.284</span> </span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> SB    MVPA     30  -<span style="color: #BB0000;">0.536</span>     0.061<span style="text-decoration: underline;">5</span>   296   -<span style="color: #BB0000;">0.657</span>   -<span style="color: #BB0000;">0.415</span></span></span></code></pre></div>
-<p>The first row is the reference day, which has no donor or receiver
-and a <code>delta</code> of 0. Subtracting the reference row from a
-reallocated row gives the mean difference of the relative output. For
-the logistic regression, the absolute output is the predicted
-probability of obesity.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<p>The <code>delta = 0</code> row gives the predicted outcome at the
+reference day; subtracting it from any subsequent row recovers the
+relative mean difference. On the logistic model,
+<code>type = "absolute"</code> returns predicted obesity probabilities
+whose odds ratios match the relative estimates above:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/predict_realloc.html">predict_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_ob</span>, from <span class="op">=</span> <span class="st">"SB"</span>, to <span class="op">=</span> <span class="st">"MVPA"</span>,</span>
 <span>                delta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">20</span>, <span class="fl">30</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"absolute"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 8</span></span></span>
@@ -387,17 +307,50 @@ probability of obesity.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> SB    MVPA     10    0.222    0.026<span style="text-decoration: underline;">8</span>   <span style="color: #BB0000;">Inf</span>    0.174     0.279</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> SB    MVPA     20    0.197    0.027<span style="text-decoration: underline;">0</span>   <span style="color: #BB0000;">Inf</span>    0.149     0.255</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> SB    MVPA     30    0.177    0.027<span style="text-decoration: underline;">1</span>   <span style="color: #BB0000;">Inf</span>    0.130     0.237</span></span></code></pre></div>
-<p>The odds ratios of the complete call are ratios of the odds at these
-probabilities.</p>
 </div>
-<div class="section level3">
-<h3 id="a-chosen-reference-day">A chosen reference day<a class="anchor" aria-label="anchor" href="#a-chosen-reference-day"></a>
-</h3>
-<p>To anchor the comparison at a chosen day instead (e.g., a guideline
-schedule or a policy target), give the <code>reference</code> argument
-one positive value for each part. The values must sum to the total of
-the composition, 1440 minutes here.</p>
+<div class="section level2">
+<h2 id="visualizing-reallocation-curves">Visualizing reallocation curves<a class="anchor" aria-label="anchor" href="#visualizing-reallocation-curves"></a>
+</h2>
+<p>To plot pairwise reallocations as continuous curves across all
+behaviour pairs, use <code><a href="../reference/plot_realloc.html">plot_realloc()</a></code>. Each panel in the
+lower-triangular grid sweeps one pair in both directions up to
+<code>delta_max</code> minutes (the colour of each side of a curve marks
+the behaviour gaining time). Here we use <code>n_points = 20</code> for
+speed; the default of 41 draws smoother curves:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_realloc.html">plot_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_ob</span>, delta_max <span class="op">=</span> <span class="fl">60</span>, n_points <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span></code></pre></div>
+<p><img src="predicting-reallocations_files/figure-html/plot-1.png" class="r-plt" alt="Lower-triangular grid of six panels, one per pair of parts, each showing the odds ratio of obesity against the minutes reallocated between the two parts in either direction, with a confidence ribbon, a dashed line at 1, and colour marking the part gaining time." width="100%"></p>
+<p>In the <code>MVPA</code> panels, the curves stop at 24 minutes on the
+side where <code>MVPA</code> loses time—the largest evaluated step that
+keeps <code>MVPA</code> positive from its 28.1-minute reference—and rise
+more steeply than they fall on the opposite side.</p>
+<p>The returned object stores both the assembled <code>figure</code> and
+individual <code>panels</code>, so you can pull out a single comparison
+on its own:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">p</span><span class="op">$</span><span class="va">panels</span><span class="op">[[</span><span class="st">"MVPA.SB"</span><span class="op">]</span><span class="op">]</span></span></code></pre></div>
+<p><img src="predicting-reallocations_files/figure-html/plot-panel-1.png" class="r-plt" alt="A single reallocation panel for obesity: the odds ratio against the minutes reallocated between sedentary behaviour and moderate-to-vigorous activity, with a confidence ribbon and a dashed line at 1." width="100%"></p>
+<p>To omit a behaviour’s panels from the grid without removing it from
+the underlying composition, pass its name to <code>exclude</code> (with
+<code>scheme = "one-to-all"</code>, excluded parts still participate in
+the reallocation):</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_realloc.html">plot_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_ob</span>, delta_max <span class="op">=</span> <span class="fl">60</span>, n_points <span class="op">=</span> <span class="fl">20</span>, exclude <span class="op">=</span> <span class="st">"MVPA"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="predicting-reallocations_files/figure-html/plot-exclude-1.png" class="r-plt" alt="Reallocation figure for obesity without the moderate-to-vigorous activity panels: three panels showing the odds ratio against the minutes reallocated between light activity, sedentary behaviour and sleep, with confidence ribbons and a dashed line at 1." width="100%"></p>
+<p>For a linear model like <code>fit_bmi</code>, the vertical axis
+switches automatically to mean differences with a dashed reference line
+at 0:</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_realloc.html">plot_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_bmi</span>, delta_max <span class="op">=</span> <span class="fl">60</span>, n_points <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span></code></pre></div>
+<p><img src="predicting-reallocations_files/figure-html/plot-bmi-1.png" class="r-plt" alt="Reallocation figure for the linear model: six panels showing the mean difference in z-BMI against the minutes reallocated between each pair of parts, with a confidence ribbon and a dashed reference line at 0." width="100%"></p>
+</div>
+<div class="section level2">
+<h2 id="custom-reference-days-and-subgroup-moderation">Custom reference days and subgroup moderation<a class="anchor" aria-label="anchor" href="#custom-reference-days-and-subgroup-moderation"></a>
+</h2>
+<p>To anchor reallocations at a specific policy or guideline day rather
+than the sample geometric mean, pass a positive vector summing to the
+composition total to <code>reference</code>:</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/predict_realloc.html">predict_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_ob</span>, from <span class="op">=</span> <span class="st">"SB"</span>, to <span class="op">=</span> <span class="st">"MVPA"</span>,</span>
 <span>                delta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">20</span>, <span class="fl">30</span><span class="op">)</span>,</span>
 <span>                reference <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>MVPA <span class="op">=</span> <span class="fl">30</span>, LPA <span class="op">=</span> <span class="fl">240</span>, SB <span class="op">=</span> <span class="fl">660</span>, SPT <span class="op">=</span> <span class="fl">510</span><span class="op">)</span><span class="op">)</span></span>
@@ -408,31 +361,26 @@ the composition, 1440 minutes here.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> SB    MVPA     20    0.715    0.045<span style="text-decoration: underline;">4</span>   <span style="color: #BB0000;">Inf</span>    0.632     0.810     -<span style="color: #BB0000;">5.28</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> SB    MVPA     30    0.632    0.054<span style="text-decoration: underline;">8</span>   <span style="color: #BB0000;">Inf</span>    0.533     0.749     -<span style="color: #BB0000;">5.30</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: p.value &lt;dbl&gt;</span></span></span></code></pre></div>
-<p>The odds ratio for 10 minutes is now 0.830, against 0.822 at the
-closed geometric mean. Because the same transfer is a different relative
-change on a different day, the estimate depends on the day it starts
-from. Dumuid, Stanford, Pedišić, et al. (2018) show such differences
-between reference compositions for boys and girls.</p>
-</div>
-<div class="section level3">
-<h3 id="covariates">Covariates<a class="anchor" aria-label="anchor" href="#covariates"></a>
-</h3>
-<p>Neither fit so far includes covariates. When a model adjusts for
-covariates without composition-by-covariate interactions, the covariates
-cancel in the contrast, so a relative estimate is the same at every
-covariate value, and an absolute prediction is made with the covariates
-averaged over, as in the emmeans grid step. When the model includes an
-interaction between the composition and a covariate, the contrast
-differs between values of that covariate, and the call ends with an
-error unless you fix those values through <code>at</code> or split them
-through <code>by</code>. <code>at</code> takes a list of covariate
-values such as <code>at = list(sex = "female")</code>. For this case,
-see the help page <code><a href="../reference/predict_realloc.html">?predict_realloc</a></code>.</p>
-<p>In <code>fit_sex</code>, sex is added as a <code>moderator</code> of
-the composition, and the reallocation is estimated once per sex. For
-moderators, see
-<code><a href="../articles/advanced-models.html">vignette("advanced-models", package = "timecoda")</a></code>.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<p>Starting from 30 minutes of <code>MVPA</code> instead of 28.1 shifts
+the 10-minute odds ratio slightly from 0.822 to 0.830, because the same
+transfer represents a smaller relative increase (Dumuid, Stanford,
+Pedišić, et al., 2018).</p>
+<p>Because all predictions for linear and full quadratic models are
+invariant to the choice of ILR basis (only non-invariant specifications
+like squares-only <code>I(ilr()^2)</code> or <code><a href="https://rdrr.io/r/stats/poly.html" class="external-link">poly()</a></code> depend
+on part order; see <code><a href="../reference/ilr.html">?ilr</a></code>), <code><a href="../reference/predict_realloc.html">predict_realloc()</a></code>
+evaluates every contrast in the single basis stored in the fit. When a
+model includes main-effect covariates only, they cancel out of relative
+contrasts and are averaged over on the <code>emmeans</code> grid for
+absolute predictions. When the composition interacts with a
+covariate—for example via <code>moderator = "sex"</code> (see
+<code><a href="../articles/advanced-models.html">vignette("advanced-models", package = "timecoda")</a></code>)—estimates
+depend on the covariate value, so you either split by subgroup with
+<code>by</code> or pin a value with <code>at</code> (e.g.,
+<code>at = list(sex = "female")</code>). For a factor
+<code>moderator</code>, <code>by</code> defaults to that moderator
+automatically:</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_sex</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/comp_iv.html">comp_iv</a></span><span class="op">(</span>comp <span class="op">=</span> <span class="va">cd</span>, outcome <span class="op">=</span> <span class="st">"obesity"</span>, model <span class="op">=</span> <span class="st">"glm"</span>,</span>
 <span>                   family <span class="op">=</span> <span class="st">"binomial"</span>, moderator <span class="op">=</span> <span class="st">"sex"</span><span class="op">)</span></span>
 <span><span class="va">r_sex</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predict_realloc.html">predict_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_sex</span>, from <span class="op">=</span> <span class="st">"SB"</span>, to <span class="op">=</span> <span class="st">"MVPA"</span>,</span>
@@ -452,42 +400,22 @@ moderators, see
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> MVPA  SB    male   Moderate-to-v… Sedentary…    20    0.722    0.597     0.873</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> MVPA  SB    male   Moderate-to-v… Sedentary…    30    0.643    0.496     0.832</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: p.value &lt;dbl&gt;</span></span></span></code></pre></div>
-<p>On a fit with a factor <code>moderator</code>, <code>by</code>
-defaults to the moderator, so the same rows are returned without naming
-it. <code><a href="../reference/plot_realloc.html">plot_realloc()</a></code> passes <code>by</code> to
-<code><a href="../reference/predict_realloc.html">predict_realloc()</a></code> and stacks one panel grid per level, and
-the grids share the legend and the vertical axis, so that you can
-compare a curve between the sexes panel by panel.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<p>To compare curves visually across sexes, <code><a href="../reference/plot_realloc.html">plot_realloc()</a></code>
+also accepts <code>by</code> and stacks one panel grid per level on a
+shared vertical axis:</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_realloc.html">plot_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_sex</span>, delta_max <span class="op">=</span> <span class="fl">60</span>, n_points <span class="op">=</span> <span class="fl">20</span>, by <span class="op">=</span> <span class="st">"sex"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="predicting-reallocations_files/figure-html/covariates-plot-1.png" class="r-plt" alt="Grouped reallocation figure for obesity with sex as moderator: two lower-triangular grids of six panels stacked as rows, the first titled sex: female and the second sex: male, each panel showing the odds ratio against the minutes reallocated between a pair of parts with a confidence ribbon and a dashed line at 1, on one vertical axis shared by both grids." width="100%"></p>
 </div>
-<div class="section level3">
-<h3 id="the-ilr-basis">The ILR basis<a class="anchor" aria-label="anchor" href="#the-ilr-basis"></a>
-</h3>
-<p>A different ILR basis rotates the coordinates and the coefficients
-together, and for a model linear in the coordinates, like the two fits
-here, or one holding their full quadratic, every prediction is
-unchanged. <code><a href="../reference/predict_realloc.html">predict_realloc()</a></code> evaluates every contrast in
-the single basis stored in the fit. A squares-only or
-<code><a href="https://rdrr.io/r/stats/poly.html" class="external-link">poly()</a></code> term changes with the order of the parts (see
-<code><a href="../reference/ilr.html">?ilr</a></code>).</p>
-</div>
-</div>
 <div class="section level2">
-<h2 id="part-3--publication-output">Part 3. Publication output<a class="anchor" aria-label="anchor" href="#part-3--publication-output"></a>
+<h2 id="publication-tables">Publication tables<a class="anchor" aria-label="anchor" href="#publication-tables"></a>
 </h2>
-<div class="section level3">
-<h3 id="publication-table">Publication table<a class="anchor" aria-label="anchor" href="#publication-table"></a>
-</h3>
-<p>The table returned by <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> keeps full numeric
-precision. To build the publication table from it, use
-<code><a href="../reference/pub_ready.html">pub_ready()</a></code>, which uses the <code>gt</code> package.
-<code>gt</code> is a suggested package, and <code><a href="../reference/pub_ready.html">pub_ready()</a></code> is
-the only function that requires it.</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<p>To build a formatted <code>gt</code> table across all pairs and
+magnitudes, pass the reallocation summary to
+<code><a href="../reference/pub_ready.html">pub_ready()</a></code>:</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">r_all</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predict_realloc.html">predict_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_ob</span>, delta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">20</span>, <span class="fl">30</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/pub_ready.html">pub_ready</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">r_all</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">$</span><span class="va">effects</span></span></code></pre></div>
 <div id="mwlefoodfi" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <style>#mwlefoodfi table {
@@ -1095,17 +1023,10 @@ the only function that requires it.</p>
     </tr></tfoot>
 </table>
 </div>
-<p><code><a href="../reference/pub_ready.html">pub_ready()</a></code> returns a list of tables, and at the console
-the bare call
-<code>pub_ready(x = summary(object = r_all), digits = 2)</code> displays
-every table in the list.</p>
-<p>The dashes in the 30-minute group are the three invalid transfers out
-of moderate-to-vigorous activity, which the default
-<code>on_invalid = "na"</code> keeps as missing estimates.</p>
-<p>To change the threshold for the asterisk, set <code>p_flag</code> in
-<code><a href="../reference/pub_ready.html">pub_ready()</a></code>, here to <code>1e-6</code>. Only the asterisks
-differ from those of the first table.</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<p>Dashes in the 30-minute column mark the three invalid transfers out
+of <code>MVPA</code>. By default, estimates with <span class="math inline">p &lt; 0.05</span> are flagged with an asterisk; you
+can tighten that threshold with <code>p_flag</code>:</p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/pub_ready.html">pub_ready</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">r_all</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">2</span>, p_flag <span class="op">=</span> <span class="fl">1e-6</span><span class="op">)</span><span class="op">$</span><span class="va">effects</span></span></code></pre></div>
 <div id="eexombwkke" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <style>#eexombwkke table {
@@ -1714,62 +1635,6 @@ differ from those of the first table.</p>
 </table>
 </div>
 </div>
-<div class="section level3">
-<h3 id="transfer-figure">Transfer figure<a class="anchor" aria-label="anchor" href="#transfer-figure"></a>
-</h3>
-<p><code><a href="../reference/plot_realloc.html">plot_realloc()</a></code> draws the estimates as continuous curves.
-It sweeps each pair of parts in both directions up to
-<code>delta_max</code> minutes and evaluates each curve at
-<code>n_points</code> magnitudes across the two directions. Twenty is
-used here to keep this example quick, and the default of 41 draws
-smoother curves.</p>
-<p>Each of the six panels in the lower triangle of the grid holds one
-unordered pair of parts. The minutes moved between the two parts are
-plotted as a positive magnitude on both sides of zero, with time moving
-to the part named first in the panel’s title to the right of zero and to
-the second part to the left of zero. The vertical axis shows the odds
-ratio on a logarithmic scale shared by every panel, and a dashed line
-marks 1 for no difference. The shaded ribbon is the 95% confidence
-interval.</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_realloc.html">plot_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_ob</span>, delta_max <span class="op">=</span> <span class="fl">60</span>, n_points <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span></code></pre></div>
-<p><img src="predicting-reallocations_files/figure-html/plot-1.png" class="r-plt" alt="Lower-triangular grid of six panels, one per pair of parts, each showing the odds ratio of obesity against the minutes reallocated between the two parts in either direction, with a confidence ribbon, a dashed line at 1, and colour marking the part gaining time." width="100%"></p>
-<p>In the panels with moderate-to-vigorous activity, the half in which
-that part gives time climbs more steeply than the other half falls,
-which is the asymmetry found when the transfer was reversed. That half
-stops at 24 minutes, the largest evaluated magnitude that leaves the
-part positive at its reference value of 28.1 minutes.</p>
-<p><code><a href="../reference/plot_realloc.html">plot_realloc()</a></code> also returns the panels, so you can draw
-one of them on its own or assemble it with others. The returned list
-holds <code>panels</code>, named by the parts of each panel, and
-<code>figure</code>, the assembled figure.</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_realloc.html">plot_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_ob</span>, delta_max <span class="op">=</span> <span class="fl">60</span>, n_points <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span></code></pre></div>
-<p><img src="predicting-reallocations_files/figure-html/plot-panel-1.png" class="r-plt" alt="A single reallocation panel for obesity: the odds ratio against the minutes reallocated between sedentary behaviour and moderate-to-vigorous activity, with a confidence ribbon and a dashed line at 1." width="100%"></p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">p</span><span class="op">$</span><span class="va">panels</span><span class="op">[[</span><span class="st">"MVPA.SB"</span><span class="op">]</span><span class="op">]</span></span></code></pre></div>
-<p><img src="predicting-reallocations_files/figure-html/plot-panel-2.png" class="r-plt" alt="A single reallocation panel for obesity: the odds ratio against the minutes reallocated between sedentary behaviour and moderate-to-vigorous activity, with a confidence ribbon and a dashed line at 1." width="100%"></p>
-<p>To hide the panels of a part, name it in <code>exclude</code>.</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_realloc.html">plot_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_ob</span>, delta_max <span class="op">=</span> <span class="fl">60</span>, n_points <span class="op">=</span> <span class="fl">20</span>, exclude <span class="op">=</span> <span class="st">"MVPA"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="predicting-reallocations_files/figure-html/plot-exclude-1.png" class="r-plt" alt="Reallocation figure for obesity without the moderate-to-vigorous activity panels: three panels showing the odds ratio against the minutes reallocated between light activity, sedentary behaviour and sleep, with confidence ribbons and a dashed line at 1." width="100%"></p>
-<p>The excluded part stays in the composition, so the filter changes
-only the display. With <code>scheme = "one-to-all"</code>,
-<code><a href="../reference/plot_realloc.html">plot_realloc()</a></code> draws one panel per part, each showing that
-part against all the others, and an excluded part still takes its share
-of each reallocation.</p>
-<p>For the linear model, the vertical axis shows the mean difference in
-z-BMI on an ordinary scale, and the dashed reference line is drawn at
-0.</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_realloc.html">plot_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_bmi</span>, delta_max <span class="op">=</span> <span class="fl">60</span>, n_points <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span></code></pre></div>
-<p><img src="predicting-reallocations_files/figure-html/plot-bmi-1.png" class="r-plt" alt="Reallocation figure for the linear model: six panels showing the mean difference in z-BMI against the minutes reallocated between each pair of parts, with a confidence ribbon and a dashed reference line at 0." width="100%"></p>
-<p>For z-BMI, the ribbons of the transfers between sedentary behaviour
-and either light activity or sleep lie wholly above or below the dashed
-line at reallocations away from zero, whereas the ribbons of the
-transfers between light activity and sleep include it.</p>
-</div>
-</div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
 </h2>
@@ -1797,6 +1662,9 @@ approach. <em>BMC Public Health</em>, 18, 311.</p>
 <li>
 <code><a href="../articles/composition-predictor.html">vignette("composition-predictor", package = "timecoda")</a></code>:
 fitting the models whose reallocations this vignette estimates.</li>
+<li>
+<code><a href="../articles/optimal-composition.html">vignette("optimal-composition", package = "timecoda")</a></code>:
+searching a fitted model for the Goldilocks zone.</li>
 <li>
 <code><a href="../articles/timecoda.html">vignette("timecoda", package = "timecoda")</a></code>: the
 complete workflow, from declaring a composition to the reallocation

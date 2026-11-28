@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">timecoda</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.6.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.6.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,36 +70,26 @@
       <h1>Advanced model engines and the formula interface</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/MarcusVVLopes/timecoda/blob/v0.6.0/vignettes/advanced-models.Rmd" class="external-link"><code>vignettes/advanced-models.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/MarcusVVLopes/timecoda/blob/main/vignettes/advanced-models.Rmd" class="external-link"><code>vignettes/advanced-models.Rmd</code></a></small>
       <div class="d-none name"><code>advanced-models.Rmd</code></div>
     </div>
 
     
     
-<p>For the model engines of <code><a href="../reference/comp_iv.html">comp_iv()</a></code> beyond
-<code>"lm"</code> and <code>"glm"</code>, the formula interface and the
-diagnostics of each engine, see the four parts below.</p>
+<p>Beyond single-level linear and generalized linear models
+(<code><a href="../articles/composition-predictor.html">vignette("composition-predictor", package = "timecoda")</a></code>),
+<code><a href="../reference/comp_iv.html">comp_iv()</a></code> supports multilevel, survival, ordinal,
+multinomial, and outlier-robust designs, along with custom
+<code><a href="../reference/ilr.html">ilr()</a></code> formulas, moderation, varying-total compositions, and
+engine-specific diagnostics.</p>
+<p>In addition to <code>zbmi</code>, <code>obesity</code>, and
+<code>sex</code>, <code>timeuse</code> includes a clustering variable
+(<code>school</code>, ten schools), an ordered academic band
+(<code>grade</code>: <code>below</code>, <code>expected</code>,
+<code>above</code>), and follow-up time in months to obesity onset
+(<code>time</code>, <code>event</code>).</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://marcusvvlopes.github.io/timecoda/">timecoda</a></span><span class="op">)</span></span></code></pre></div>
-<div class="section level2">
-<h2 id="the-example-data">The example data<a class="anchor" aria-label="anchor" href="#the-example-data"></a>
-</h2>
-<p>To model an outcome as a function of a time-use composition, which is
-the independent variable, use <code><a href="../reference/comp_iv.html">comp_iv()</a></code>. For its linear and
-generalized linear models, see
-<code><a href="../articles/composition-predictor.html">vignette("composition-predictor", package = "timecoda")</a></code>.</p>
-<p>The examples use the bundled <code>timeuse</code> data. For a
-description of the data, see
-<code><a href="../articles/composition-variable.html">vignette("composition-variable", package = "timecoda")</a></code>. The
-data hold the body-mass-index z-score (<code>zbmi</code>), the obesity
-indicator (<code>obesity</code>) and sex (<code>sex</code>) used in the
-other vignettes, together with each person’s school
-(<code>school</code>, ten schools) and an ordered academic-achievement
-band (<code>grade</code>, with the levels <code>below</code>,
-<code>expected</code> and <code>above</code>). They also hold the
-follow-up time in months to the onset of obesity or censoring
-(<code>time</code>), with its event indicator (<code>event</code>, 1 for
-onset).</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">labs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>  MVPA <span class="op">=</span> <span class="st">"Moderate-to-vigorous PA"</span>,</span>
@@ -115,201 +105,17 @@ onset).</p>
 <span>  units   <span class="op">=</span> <span class="st">"min/day"</span>,</span>
 <span>  labels  <span class="op">=</span> <span class="va">labs</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-</div>
+<p>Several backends (<code>coxme</code>, <code>ordinal</code>,
+<code>mclogit</code>, <code>robustbase</code>, <code>robustlmm</code>)
+are suggested packages; examples requiring them run only when
+installed.</p>
 <div class="section level2">
-<h2 id="part-1--one-builder-eleven-engines">Part 1. One builder, eleven engines<a class="anchor" aria-label="anchor" href="#part-1--one-builder-eleven-engines"></a>
+<h2 id="multilevel-models">Multilevel models<a class="anchor" aria-label="anchor" href="#multilevel-models"></a>
 </h2>
-<p>Every engine is fitted by <code><a href="../reference/comp_iv.html">comp_iv()</a></code> through the same
-procedure. The engines differ in the effect measure reported by
-<code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>, in whether <code>family</code> or
-<code>random</code> must be given, and in whether a prediction on the
-scale of the outcome exists. You must give <code>family</code> for
-<code>"glm"</code> and <code>"glmer"</code>, and the other engines
-reject it. <code>random</code> is required for the clustered engines
-(<code>"coxme"</code>, <code>"lmer"</code>, <code>"glmer"</code>,
-<code>"clmm"</code> and <code>"rlmer"</code>), optional for
-<code>"mblogit"</code> and rejected by the rest.</p>
-<p>Reallocation estimates are contrasts. For details, see
-<code><a href="../articles/predicting-reallocations.html">vignette("predicting-reallocations", package = "timecoda")</a></code>.</p>
-<table class="table">
-<colgroup>
-<col width="25%">
-<col width="25%">
-<col width="25%">
-<col width="25%">
-</colgroup>
-<thead><tr class="header">
-<th><code>model</code></th>
-<th>Backend</th>
-<th>Use case</th>
-<th>Effect measure</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><code>"lm"</code></td>
-<td><code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">stats::lm()</a></code></td>
-<td>A continuous outcome with independent observations</td>
-<td>mean difference</td>
-</tr>
-<tr class="even">
-<td><code>"glm"</code></td>
-<td><code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">stats::glm()</a></code></td>
-<td>A binary, count or continuous outcome with a GLM family (e.g.,
-logistic or Poisson regression) and independent observations</td>
-<td>set by the link: odds ratio, rate, risk or mean ratio, or mean
-difference</td>
-</tr>
-<tr class="odd">
-<td><code>"cox"</code></td>
-<td><code><a href="https://rdrr.io/pkg/survival/man/coxph.html" class="external-link">survival::coxph()</a></code></td>
-<td>A time-to-event outcome with independent observations</td>
-<td>hazard ratio</td>
-</tr>
-<tr class="even">
-<td><code>"coxme"</code></td>
-<td><code><a href="https://rdrr.io/pkg/coxme/man/coxme.html" class="external-link">coxme::coxme()</a></code></td>
-<td>A time-to-event outcome with random effects for clustered or
-repeated data</td>
-<td>hazard ratio</td>
-</tr>
-<tr class="odd">
-<td><code>"lmer"</code></td>
-<td><code><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lme4::lmer()</a></code></td>
-<td>A continuous outcome with random effects for clustered or repeated
-data</td>
-<td>mean difference</td>
-</tr>
-<tr class="even">
-<td><code>"glmer"</code></td>
-<td><code><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">lme4::glmer()</a></code></td>
-<td>A binary, count or continuous outcome with a GLM family and random
-effects for clustered or repeated data</td>
-<td>set by the link, as for <code>"glm"</code>
-</td>
-</tr>
-<tr class="odd">
-<td><code>"clm"</code></td>
-<td><code><a href="https://rdrr.io/pkg/ordinal/man/clm.html" class="external-link">ordinal::clm()</a></code></td>
-<td>An ordered-factor outcome (e.g., a graded scale)</td>
-<td>cumulative odds ratio</td>
-</tr>
-<tr class="even">
-<td><code>"clmm"</code></td>
-<td><code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm()</a></code></td>
-<td>An ordered-factor outcome with random effects for clustered or
-repeated data</td>
-<td>cumulative odds ratio</td>
-</tr>
-<tr class="odd">
-<td><code>"mblogit"</code></td>
-<td><code><a href="https://melff.github.io/mclogit/reference/mblogit.html" class="external-link">mclogit::mblogit()</a></code></td>
-<td>An unordered-factor outcome with three or more categories, with
-optional random effects</td>
-<td>relative-risk ratio, one per non-reference category</td>
-</tr>
-<tr class="even">
-<td><code>"lmrob"</code></td>
-<td><code><a href="https://rdrr.io/pkg/robustbase/man/lmrob.html" class="external-link">robustbase::lmrob()</a></code></td>
-<td>A continuous outcome with outlying observations, down-weighted by
-MM-estimation</td>
-<td>mean difference</td>
-</tr>
-<tr class="odd">
-<td><code>"rlmer"</code></td>
-<td><code><a href="https://rdrr.io/pkg/robustlmm/man/rlmer.html" class="external-link">robustlmm::rlmer()</a></code></td>
-<td>A continuous outcome with outlying observations and random effects
-for clustered or repeated data</td>
-<td>mean difference</td>
-</tr>
-</tbody>
-</table>
-<p>Five engines (<code>"cox"</code>, <code>"coxme"</code>,
-<code>"clm"</code>, <code>"clmm"</code> and <code>"mblogit"</code>)
-offer no single scale on which to predict the outcome. On these fits,
-<code><a href="../reference/predict_realloc.html">predict_realloc()</a></code> accepts only
-<code>type = "relative"</code>, its default, and <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>
-draws only the relative surface. To draw one outcome level of a
-multinomial fit, give that level to <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> as
-<code>category</code>.</p>
-<p>The backends in the coxme, ordinal, mclogit, robustbase and robustlmm
-packages are suggested packages, and <code><a href="../reference/comp_iv.html">comp_iv()</a></code> checks for
-them when it is called. An example that uses one of them runs only when
-that package is installed.</p>
-</div>
-<div class="section level2">
-<h2 id="part-2--the-engines-in-turn">Part 2. The engines in turn<a class="anchor" aria-label="anchor" href="#part-2--the-engines-in-turn"></a>
-</h2>
-<p>For each family of engines, only the differences from the linear and
-logistic summaries of
-<code><a href="../articles/composition-predictor.html">vignette("composition-predictor", package = "timecoda")</a></code> are
-described.</p>
-<div class="section level3">
-<h3 id="survival-outcomes-cox-and-coxme">Survival outcomes: <code>"cox"</code> and <code>"coxme"</code><a class="anchor" aria-label="anchor" href="#survival-outcomes-cox-and-coxme"></a>
-</h3>
+<p>For clustered or repeated-measures data, pass the grouping variable
+to <code>random</code> with <code>model = "lmer"</code> or
+<code>"glmer"</code>:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_cox</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/comp_iv.html">comp_iv</a></span><span class="op">(</span>comp <span class="op">=</span> <span class="va">cd</span>, model <span class="op">=</span> <span class="st">"cox"</span>, time <span class="op">=</span> <span class="st">"time"</span>, event <span class="op">=</span> <span class="st">"event"</span>,</span>
-<span>                   covariates <span class="op">=</span> <span class="st">"sex"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_cox</span><span class="op">)</span></span>
-<span><span class="co">#&gt; &lt;comp_iv&gt; compositional Cox proportional hazards model</span></span>
-<span><span class="co">#&gt;   Parts: Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep (total = 1440 min/day)</span></span>
-<span><span class="co">#&gt;   Omnibus composition test (Wald): chi-squared(3) = 81.235, p = &lt;2e-16</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Compositional effects (Hazard ratio)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 6</span></span></span>
-<span><span class="co">#&gt;   parameter          label                  estimate conf.low conf.high  p.value</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>              <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> Global Composition Global Composition       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>     1.67<span style="color: #949494;">e</span><span style="color: #BB0000;">-17</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> MVPA vs remaining  Moderate-to-vigorous …    0.589    0.516     0.672 4.22<span style="color: #949494;">e</span><span style="color: #BB0000;">-15</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> LPA vs remaining   Light PA                  1.04     0.763     1.41  8.17<span style="color: #949494;">e</span><span style="color: #BB0000;">- 1</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> SB vs remaining    Sedentary behaviour       3.44     2.17      5.45  1.36<span style="color: #949494;">e</span><span style="color: #BB0000;">- 7</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> SPT vs remaining   Sleep                     0.476    0.314     0.720 4.45<span style="color: #949494;">e</span><span style="color: #BB0000;">- 4</span></span></span></code></pre></div>
-<p>The effects are hazard ratios, and a reallocation on a Cox fit is a
-hazard ratio as well. The report has no convergence line, because
-<code><a href="../reference/comp_iv.html">comp_iv()</a></code> does not probe Cox fits for convergence.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/predict_realloc.html">predict_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_cox</span>, from <span class="op">=</span> <span class="st">"SB"</span>, to <span class="op">=</span> <span class="st">"MVPA"</span>, delta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">30</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 10</span></span></span>
-<span><span class="co">#&gt;   from  to    delta estimate std.error    df conf.low conf.high statistic</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> SB    MVPA     10    0.856    0.015<span style="text-decoration: underline;">8</span>   <span style="color: #BB0000;">Inf</span>    0.826     0.888     -<span style="color: #BB0000;">8.44</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> SB    MVPA     30    0.683    0.030<span style="text-decoration: underline;">4</span>   <span style="color: #BB0000;">Inf</span>    0.626     0.745     -<span style="color: #BB0000;">8.56</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: p.value &lt;dbl&gt;</span></span></span></code></pre></div>
-<p>We observed that moving 10 minutes from sedentary behaviour to
-moderate-to-vigorous activity was associated with a hazard of obesity
-onset 0.856 times that at the reference composition.</p>
-<p><code>"coxme"</code> extends the Cox model with random effects. To
-give each school a random intercept (the term
-<code>(1 | school)</code>), set <code>random = "school"</code>.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_coxme</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/comp_iv.html">comp_iv</a></span><span class="op">(</span>comp <span class="op">=</span> <span class="va">cd</span>, model <span class="op">=</span> <span class="st">"coxme"</span>, time <span class="op">=</span> <span class="st">"time"</span>,</span>
-<span>                     event <span class="op">=</span> <span class="st">"event"</span>, random <span class="op">=</span> <span class="st">"school"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_coxme</span><span class="op">)</span></span>
-<span><span class="co">#&gt; &lt;comp_iv&gt; compositional mixed-effects Cox proportional hazards model</span></span>
-<span><span class="co">#&gt;   Parts: Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep (total = 1440 min/day)</span></span>
-<span><span class="co">#&gt;   Omnibus composition test (Wald): chi-squared(3) = 78.846, p = &lt;2e-16</span></span>
-<span><span class="co">#&gt;   Median hazard ratio (school): 1.231</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Compositional effects (Hazard ratio)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 6</span></span></span>
-<span><span class="co">#&gt;   parameter          label                  estimate conf.low conf.high  p.value</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>              <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> Global Composition Global Composition       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>     5.43<span style="color: #949494;">e</span><span style="color: #BB0000;">-17</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> MVPA vs remaining  Moderate-to-vigorous …    0.600    0.527     0.683 1.21<span style="color: #949494;">e</span><span style="color: #BB0000;">-14</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> LPA vs remaining   Light PA                  1.06     0.778     1.44  7.22<span style="color: #949494;">e</span><span style="color: #BB0000;">- 1</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> SB vs remaining    Sedentary behaviour       3.16     2.01      4.98  7.00<span style="color: #949494;">e</span><span style="color: #BB0000;">- 7</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> SPT vs remaining   Sleep                     0.499    0.330     0.754 9.80<span style="color: #949494;">e</span><span style="color: #BB0000;">- 4</span></span></span></code></pre></div>
-<p>One line is added to the summary, the median hazard ratio for school,
-which is computed from the school variance <code>v</code> as
-<code>exp(sqrt(2 * v) * qnorm(0.75))</code> (Austin et al., 2017). It is
-the median hazard ratio between two people with identical covariates
-drawn from different schools, taken as the person at higher risk over
-the other, and it is therefore never below 1. A value of 1 would mean no
-variation in hazard between schools.</p>
-</div>
-<div class="section level3">
-<h3 id="multilevel-models-lmer-and-glmer">Multilevel models: <code>"lmer"</code> and <code>"glmer"</code><a class="anchor" aria-label="anchor" href="#multilevel-models-lmer-and-glmer"></a>
-</h3>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_lmer</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/comp_iv.html">comp_iv</a></span><span class="op">(</span>comp <span class="op">=</span> <span class="va">cd</span>, outcome <span class="op">=</span> <span class="st">"zbmi"</span>, model <span class="op">=</span> <span class="st">"lmer"</span>,</span>
 <span>                    random <span class="op">=</span> <span class="st">"school"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_lmer</span><span class="op">)</span></span>
@@ -328,23 +134,22 @@ variation in hazard between schools.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> LPA vs remaining   Light PA                 -<span style="color: #BB0000;">0.200</span>   -<span style="color: #BB0000;">0.426</span>    0.025<span style="text-decoration: underline;">5</span> 8.19<span style="color: #949494;">e</span><span style="color: #BB0000;">- 2</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> SB vs remaining    Sedentary behaviour       1.59     1.28     1.89   3.52<span style="color: #949494;">e</span><span style="color: #BB0000;">-21</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> SPT vs remaining   Sleep                    -<span style="color: #BB0000;">0.697</span>   -<span style="color: #BB0000;">1.00</span>    -<span style="color: #BB0000;">0.391</span>  1.08<span style="color: #949494;">e</span><span style="color: #BB0000;">- 5</span></span></span></code></pre></div>
-<p>We read the intraclass correlation for school, 0.264, as the share of
-the total variance that lies between schools. With several grouping
-terms (e.g., <code>random = c("region", "school")</code>), one such
-share is reported per term.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<p>The summary adds the intraclass correlation (ICC) for each grouping
+term (here, 26.4% of total variance lies between schools). When
+<code>pbkrtest</code> is installed, both <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> and
+<code><a href="../reference/predict_realloc.html">predict_realloc()</a></code> use Kenward–Roger degrees of freedom
+(Kenward &amp; Roger, 1997; see <code><a href="../reference/comp_iv.html">?comp_iv</a></code> for
+alternatives):</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/predict_realloc.html">predict_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_lmer</span>, from <span class="op">=</span> <span class="st">"SB"</span>, to <span class="op">=</span> <span class="st">"MVPA"</span>, delta <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 10</span></span></span>
 <span><span class="co">#&gt;   from  to    delta estimate std.error    df conf.low conf.high statistic</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> SB    MVPA     10   -<span style="color: #BB0000;">0.203</span>    0.011<span style="text-decoration: underline;">9</span>  288.   -<span style="color: #BB0000;">0.226</span>    -<span style="color: #BB0000;">0.179</span>     -<span style="color: #BB0000;">17.0</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: p.value &lt;dbl&gt;</span></span></span></code></pre></div>
-<p>The <code>df</code> column is computed with the Kenward-Roger
-approximation (Kenward &amp; Roger, 1997), which <code>emmeans</code>
-applies through the pbkrtest package when that package is installed. The
-same method is used for the per-part rows of the summary. For the
-alternatives, see the help page <code><a href="../reference/comp_iv.html">?comp_iv</a></code>.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<p>For binary or count clustered outcomes, switch to
+<code>"glmer"</code> with <code>family</code>:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_glmer</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/comp_iv.html">comp_iv</a></span><span class="op">(</span>comp <span class="op">=</span> <span class="va">cd</span>, outcome <span class="op">=</span> <span class="st">"obesity"</span>, model <span class="op">=</span> <span class="st">"glmer"</span>,</span>
 <span>                     family <span class="op">=</span> <span class="st">"binomial"</span>, random <span class="op">=</span> <span class="st">"school"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_glmer</span><span class="op">)</span></span>
@@ -363,19 +168,77 @@ alternatives, see the help page <code><a href="../reference/comp_iv.html">?comp_
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> LPA vs remaining   Light PA                   0.984    0.506     1.91  9.61<span style="color: #949494;">e</span><span style="color: #BB0000;">-1</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> SB vs remaining    Sedentary behaviour        2.98     1.16      7.68  2.37<span style="color: #949494;">e</span><span style="color: #BB0000;">-2</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> SPT vs remaining   Sleep                      0.681    0.271     1.71  4.15<span style="color: #949494;">e</span><span style="color: #BB0000;">-1</span></span></span></code></pre></div>
-<p>The between-school line is now a latent intraclass correlation. It is
-the same share, computed on the latent scale of the logistic model with
-<code>pi^2 / 3</code> in place of the residual variance (Goldstein et
-al., 2002). With a value of 0.001, almost none of the variation in the
-odds of obesity lies between schools.</p>
+<p>On logistic mixed models, the between-school share is reported as a
+latent ICC using <span class="math inline">\pi^2 / 3</span> as the
+level-1 variance (Goldstein et al., 2002)—near zero (0.001) here.</p>
 </div>
-<div class="section level3">
-<h3 id="ordinal-outcomes-clm-and-clmm">Ordinal outcomes: <code>"clm"</code> and <code>"clmm"</code><a class="anchor" aria-label="anchor" href="#ordinal-outcomes-clm-and-clmm"></a>
-</h3>
-<p>To fit a cumulative-link model to an ordered factor, use
-<code>"clm"</code>. Here the factor is the three grade bands
-(<code>below</code>, <code>expected</code> and <code>above</code>, in
-that order).</p>
+<div class="section level2">
+<h2 id="survival-outcomes">Survival outcomes<a class="anchor" aria-label="anchor" href="#survival-outcomes"></a>
+</h2>
+<p>For time-to-event data, supply <code>time</code> and
+<code>event</code> with <code>model = "cox"</code>:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_cox</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/comp_iv.html">comp_iv</a></span><span class="op">(</span>comp <span class="op">=</span> <span class="va">cd</span>, model <span class="op">=</span> <span class="st">"cox"</span>, time <span class="op">=</span> <span class="st">"time"</span>, event <span class="op">=</span> <span class="st">"event"</span>,</span>
+<span>                   covariates <span class="op">=</span> <span class="st">"sex"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_cox</span><span class="op">)</span></span>
+<span><span class="co">#&gt; &lt;comp_iv&gt; compositional Cox proportional hazards model</span></span>
+<span><span class="co">#&gt;   Parts: Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep (total = 1440 min/day)</span></span>
+<span><span class="co">#&gt;   Omnibus composition test (Wald): chi-squared(3) = 81.235, p = &lt;2e-16</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Compositional effects (Hazard ratio)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 6</span></span></span>
+<span><span class="co">#&gt;   parameter          label                  estimate conf.low conf.high  p.value</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>              <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> Global Composition Global Composition       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>     1.67<span style="color: #949494;">e</span><span style="color: #BB0000;">-17</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> MVPA vs remaining  Moderate-to-vigorous …    0.589    0.516     0.672 4.22<span style="color: #949494;">e</span><span style="color: #BB0000;">-15</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> LPA vs remaining   Light PA                  1.04     0.763     1.41  8.17<span style="color: #949494;">e</span><span style="color: #BB0000;">- 1</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> SB vs remaining    Sedentary behaviour       3.44     2.17      5.45  1.36<span style="color: #949494;">e</span><span style="color: #BB0000;">- 7</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> SPT vs remaining   Sleep                     0.476    0.314     0.720 4.45<span style="color: #949494;">e</span><span style="color: #BB0000;">- 4</span></span></span></code></pre></div>
+<p>Both <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> and <code><a href="../reference/predict_realloc.html">predict_realloc()</a></code> report
+hazard ratios (no convergence line is printed because
+<code><a href="../reference/comp_iv.html">comp_iv()</a></code> does not probe Cox fits for convergence):</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/predict_realloc.html">predict_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_cox</span>, from <span class="op">=</span> <span class="st">"SB"</span>, to <span class="op">=</span> <span class="st">"MVPA"</span>, delta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">30</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 10</span></span></span>
+<span><span class="co">#&gt;   from  to    delta estimate std.error    df conf.low conf.high statistic</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> SB    MVPA     10    0.856    0.015<span style="text-decoration: underline;">8</span>   <span style="color: #BB0000;">Inf</span>    0.826     0.888     -<span style="color: #BB0000;">8.44</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> SB    MVPA     30    0.683    0.030<span style="text-decoration: underline;">4</span>   <span style="color: #BB0000;">Inf</span>    0.626     0.745     -<span style="color: #BB0000;">8.56</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: p.value &lt;dbl&gt;</span></span></span></code></pre></div>
+<p>Moving 10 minutes from <code>SB</code> to <code>MVPA</code> is
+associated with a hazard of obesity onset 0.856 times that of the
+reference day.</p>
+<p>To add a school-level random intercept (<code>(1 | school)</code>),
+switch to <code>"coxme"</code>:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_coxme</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/comp_iv.html">comp_iv</a></span><span class="op">(</span>comp <span class="op">=</span> <span class="va">cd</span>, model <span class="op">=</span> <span class="st">"coxme"</span>, time <span class="op">=</span> <span class="st">"time"</span>,</span>
+<span>                     event <span class="op">=</span> <span class="st">"event"</span>, random <span class="op">=</span> <span class="st">"school"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_coxme</span><span class="op">)</span></span>
+<span><span class="co">#&gt; &lt;comp_iv&gt; compositional mixed-effects Cox proportional hazards model</span></span>
+<span><span class="co">#&gt;   Parts: Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep (total = 1440 min/day)</span></span>
+<span><span class="co">#&gt;   Omnibus composition test (Wald): chi-squared(3) = 78.846, p = &lt;2e-16</span></span>
+<span><span class="co">#&gt;   Median hazard ratio (school): 1.231</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Compositional effects (Hazard ratio)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 6</span></span></span>
+<span><span class="co">#&gt;   parameter          label                  estimate conf.low conf.high  p.value</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>              <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> Global Composition Global Composition       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>     5.43<span style="color: #949494;">e</span><span style="color: #BB0000;">-17</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> MVPA vs remaining  Moderate-to-vigorous …    0.600    0.527     0.683 1.21<span style="color: #949494;">e</span><span style="color: #BB0000;">-14</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> LPA vs remaining   Light PA                  1.06     0.778     1.44  7.22<span style="color: #949494;">e</span><span style="color: #BB0000;">- 1</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> SB vs remaining    Sedentary behaviour       3.16     2.01      4.98  7.00<span style="color: #949494;">e</span><span style="color: #BB0000;">- 7</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> SPT vs remaining   Sleep                     0.499    0.330     0.754 9.80<span style="color: #949494;">e</span><span style="color: #BB0000;">- 4</span></span></span></code></pre></div>
+<p>The extra line reports the median hazard ratio for school, <span class="math inline">\exp(\sqrt{2 v}\,\Phi^{-1}(0.75))</span> (Austin et
+al., 2017)—always <span class="math inline">\ge 1</span>, with 1
+indicating no between-school variation in hazard.</p>
+</div>
+<div class="section level2">
+<h2 id="ordinal-and-unordered-categorical-outcomes">Ordinal and unordered categorical outcomes<a class="anchor" aria-label="anchor" href="#ordinal-and-unordered-categorical-outcomes"></a>
+</h2>
+<p>For an ordered factor like <code>grade</code>,
+<code>model = "clm"</code> fits a cumulative-link model via
+<code><a href="https://rdrr.io/pkg/ordinal/man/clm.html" class="external-link">ordinal::clm()</a></code> (Christensen, 2026), where odds ratios above
+1 indicate higher odds of being at or above any cut-point:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_clm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/comp_iv.html">comp_iv</a></span><span class="op">(</span>comp <span class="op">=</span> <span class="va">cd</span>, outcome <span class="op">=</span> <span class="st">"grade"</span>, model <span class="op">=</span> <span class="st">"clm"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_clm</span><span class="op">)</span></span>
@@ -393,9 +256,9 @@ that order).</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> LPA vs remaining   Light PA                   1.05     0.627     1.76  8.52<span style="color: #949494;">e</span><span style="color: #BB0000;">-1</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> SB vs remaining    Sedentary behaviour        0.343    0.167     0.705 3.57<span style="color: #949494;">e</span><span style="color: #BB0000;">-3</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> SPT vs remaining   Sleep                      1.75     0.855     3.59  1.26<span style="color: #949494;">e</span><span style="color: #BB0000;">-1</span></span></span></code></pre></div>
-<p>With the parameterization of <code><a href="https://rdrr.io/pkg/ordinal/man/clm.html" class="external-link">ordinal::clm()</a></code>
-(Christensen, 2026), we read an odds ratio above 1 as higher odds of a
-higher grade band (i.e., of being at or above any given cut-point).</p>
+<p>Clustered ordinal outcomes use <code>"clmm"</code> with
+<code>random</code>, reporting the same latent ICC as
+<code>"glmer"</code>:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_clmm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/comp_iv.html">comp_iv</a></span><span class="op">(</span>comp <span class="op">=</span> <span class="va">cd</span>, outcome <span class="op">=</span> <span class="st">"grade"</span>, model <span class="op">=</span> <span class="st">"clmm"</span>,</span>
 <span>                    random <span class="op">=</span> <span class="st">"school"</span><span class="op">)</span></span>
@@ -415,18 +278,9 @@ higher grade band (i.e., of being at or above any given cut-point).</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> LPA vs remaining   Light PA                   0.981    0.574     1.68  9.44<span style="color: #949494;">e</span><span style="color: #BB0000;">-1</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> SB vs remaining    Sedentary behaviour        0.386    0.184     0.809 1.17<span style="color: #949494;">e</span><span style="color: #BB0000;">-2</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> SPT vs remaining   Sleep                      1.67     0.796     3.48  1.76<span style="color: #949494;">e</span><span style="color: #BB0000;">-1</span></span></span></code></pre></div>
-<p>As for <code>"glmer"</code>, the latent intraclass correlation for
-school is computed with <code>pi^2 / 3</code> in place of the residual
-variance.</p>
-</div>
-<div class="section level3">
-<h3 id="unordered-categories-mblogit">Unordered categories: <code>"mblogit"</code><a class="anchor" aria-label="anchor" href="#unordered-categories-mblogit"></a>
-</h3>
-<p><code><a href="../reference/comp_iv.html">comp_iv()</a></code> stops with an error when an ordered
-<code>grade</code> is given to this engine.</p>
-<p>To fit <code>"mblogit"</code>, add an unordered copy of
-<code>grade</code> to the data, with the same levels in the same order,
-and declare the composition again from it.</p>
+<p>For unordered categories, <code>"mblogit"</code> rejects ordered
+factors, so we first add an unordered copy of <code>grade</code> and
+re-declare the composition:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tu</span> <span class="op">&lt;-</span> <span class="va">timeuse</span></span>
 <span><span class="va">tu</span><span class="op">$</span><span class="va">grade_cat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">tu</span><span class="op">$</span><span class="va">grade</span><span class="op">)</span>, levels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/levels.html" class="external-link">levels</a></span><span class="op">(</span><span class="va">tu</span><span class="op">$</span><span class="va">grade</span><span class="op">)</span><span class="op">)</span></span>
@@ -454,12 +308,11 @@ and declare the composition again from it.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">7</span> SB vs remaining    Sedenta…    0.245   0.090<span style="text-decoration: underline;">2</span>     0.666 5.85<span style="color: #949494;">e</span><span style="color: #BB0000;">-3</span> above         </span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">8</span> SPT vs remaining   Sleep       0.902   0.344      2.37  8.35<span style="color: #949494;">e</span><span style="color: #BB0000;">-1</span> expected      </span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">9</span> SPT vs remaining   Sleep       2.15    0.795      5.82  1.31<span style="color: #949494;">e</span><span style="color: #BB0000;">-1</span> above</span></span></code></pre></div>
-<p><code>below</code>, the first level, is the reference category. Each
-effect is a relative-risk ratio comparing one of the other two
-categories with the reference, and the new <code>response_level</code>
-column names the category. The omnibus test has 6 degrees of freedom,
-which are three coordinates for each non-reference category. On this
-fit, a reallocation also gives one row per non-reference category.</p>
+<p>Each non-reference category (<code>expected</code>,
+<code>above</code>) is contrasted with the first level
+(<code>below</code>) as a relative-risk ratio, giving a 6-df omnibus
+test across the two equations and one row per category in
+reallocations:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/predict_realloc.html">predict_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_mb</span>, from <span class="op">=</span> <span class="st">"SB"</span>, to <span class="op">=</span> <span class="st">"MVPA"</span>, delta <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 11</span></span></span>
@@ -468,18 +321,24 @@ fit, a reallocation also gives one row per non-reference category.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> SB    MVPA     10 expected           1.13    0.044<span style="text-decoration: underline;">1</span>   <span style="color: #BB0000;">Inf</span>     1.05      1.22</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> SB    MVPA     10 above              1.18    0.048<span style="text-decoration: underline;">4</span>   <span style="color: #BB0000;">Inf</span>     1.09      1.28</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: statistic &lt;dbl&gt;, p.value &lt;dbl&gt;</span></span></span></code></pre></div>
-<p>To fit a clustered model with <code>"mblogit"</code>, add
-<code>random</code>. <code>random = "school"</code> adds a random
-intercept for each school, and a bar term such as
-<code>random = "(ilr1 | school)"</code> adds a random slope on a
-coordinate. For details, see the help page <code><a href="../reference/comp_iv.html">?comp_iv</a></code>.</p>
+<p>Clustered multinomial models also accept <code>random</code> (either
+a grouping name such as <code>"school"</code> or a random-slope term
+like <code>"(ilr1 | school)"</code>; see <code><a href="../reference/comp_iv.html">?comp_iv</a></code>).</p>
+<p>Note that survival (<code>"cox"</code>, <code>"coxme"</code>),
+ordinal (<code>"clm"</code>, <code>"clmm"</code>), and multinomial
+(<code>"mblogit"</code>) engines have no single response scale for
+absolute predictions: <code><a href="../reference/predict_realloc.html">predict_realloc()</a></code> and
+<code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> give relative estimates only (pass
+<code>category</code> to <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> for a specific multinomial
+level).</p>
 </div>
-<div class="section level3">
-<h3 id="robust-linear-models-lmrob-and-rlmer">Robust linear models: <code>"lmrob"</code> and
-<code>"rlmer"</code><a class="anchor" aria-label="anchor" href="#robust-linear-models-lmrob-and-rlmer"></a>
-</h3>
-<p>To fit a linear model by MM-estimation (Yohai, 1987), use
-<code>"lmrob"</code>.</p>
+<div class="section level2">
+<h2 id="robust-linear-models">Robust linear models<a class="anchor" aria-label="anchor" href="#robust-linear-models"></a>
+</h2>
+<p>When continuous outcomes contain influential outliers,
+<code>"lmrob"</code> fits an MM-estimator (Yohai, 1987) and
+<code>"rlmer"</code> fits a robust linear mixed model (Koller,
+2016):</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_lmrob</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/comp_iv.html">comp_iv</a></span><span class="op">(</span>comp <span class="op">=</span> <span class="va">cd</span>, outcome <span class="op">=</span> <span class="st">"zbmi"</span>, model <span class="op">=</span> <span class="st">"lmrob"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_lmrob</span><span class="op">)</span></span>
@@ -497,8 +356,6 @@ coordinate. For details, see the help page <code><a href="../reference/comp_iv.h
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> LPA vs remaining   Light PA                 -<span style="color: #BB0000;">0.223</span>   -<span style="color: #BB0000;">0.505</span>    0.058<span style="text-decoration: underline;">0</span> 1.19<span style="color: #949494;">e</span><span style="color: #BB0000;">- 1</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> SB vs remaining    Sedentary behaviour       1.74     1.39     2.09   6.19<span style="color: #949494;">e</span><span style="color: #BB0000;">-20</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> SPT vs remaining   Sleep                    -<span style="color: #BB0000;">0.799</span>   -<span style="color: #BB0000;">1.13</span>    -<span style="color: #BB0000;">0.466</span>  3.54<span style="color: #949494;">e</span><span style="color: #BB0000;">- 6</span></span></span></code></pre></div>
-<p>To fit the robust linear mixed model (Koller, 2016), use
-<code>"rlmer"</code>.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_rlmer</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/comp_iv.html">comp_iv</a></span><span class="op">(</span>comp <span class="op">=</span> <span class="va">cd</span>, outcome <span class="op">=</span> <span class="st">"zbmi"</span>, model <span class="op">=</span> <span class="st">"rlmer"</span>,</span>
 <span>                     random <span class="op">=</span> <span class="st">"school"</span><span class="op">)</span></span>
@@ -518,11 +375,11 @@ coordinate. For details, see the help page <code><a href="../reference/comp_iv.h
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> LPA vs remaining   Light PA                 -<span style="color: #BB0000;">0.230</span>   -<span style="color: #BB0000;">0.464</span>   0.003<span style="text-decoration: underline;">92</span> 5.40<span style="color: #949494;">e</span><span style="color: #BB0000;">- 2</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> SB vs remaining    Sedentary behaviour       1.61     1.29    1.93    2.91<span style="color: #949494;">e</span><span style="color: #BB0000;">-23</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> SPT vs remaining   Sleep                    -<span style="color: #BB0000;">0.675</span>   -<span style="color: #BB0000;">0.994</span>  -<span style="color: #BB0000;">0.357</span>   3.18<span style="color: #949494;">e</span><span style="color: #BB0000;">- 5</span></span></span></code></pre></div>
-<p>Because the robustlmm package reports no degrees of freedom, every
-standard error, interval and p-value of an <code>"rlmer"</code> fit is
-asymptotic, in the summary and in the reallocations alike. The
-<code>df</code> column of a reallocation is <code>Inf</code>, compared
-with 288 for the same reallocation on the <code>"lmer"</code> fit.</p>
+<p>Because <code>robustlmm</code> does not estimate residual degrees of
+freedom, <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> and <code><a href="../reference/predict_realloc.html">predict_realloc()</a></code>
+compute confidence intervals and p-values from a standard normal
+approximation (<code>df = Inf</code>) rather than a <span class="math inline">t</span>-distribution (for example,
+<code>df = 288</code> for <code>"lmer"</code>):</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/predict_realloc.html">predict_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_rlmer</span>, from <span class="op">=</span> <span class="st">"SB"</span>, to <span class="op">=</span> <span class="st">"MVPA"</span>, delta <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 10</span></span></span>
@@ -531,20 +388,14 @@ with 288 for the same reallocation on the <code>"lmer"</code> fit.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> SB    MVPA     10   -<span style="color: #BB0000;">0.206</span>    0.012<span style="text-decoration: underline;">4</span>   <span style="color: #BB0000;">Inf</span>   -<span style="color: #BB0000;">0.230</span>    -<span style="color: #BB0000;">0.182</span>     -<span style="color: #BB0000;">16.6</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: p.value &lt;dbl&gt;</span></span></span></code></pre></div>
 </div>
-</div>
 <div class="section level2">
-<h2 id="part-3--the-formula-interface">Part 3. The formula interface<a class="anchor" aria-label="anchor" href="#part-3--the-formula-interface"></a>
+<h2 id="the-formula-interface-and-ilr">The formula interface and <code>ilr()</code><a class="anchor" aria-label="anchor" href="#the-formula-interface-and-ilr"></a>
 </h2>
-<div class="section level3">
-<h3 id="the-ilr-marker">The <code>ilr()</code> marker<a class="anchor" aria-label="anchor" href="#the-ilr-marker"></a>
-</h3>
-<p>To specify the model as a formula, give <code>formula</code> in place
-of <code>outcome</code>, <code>covariates</code>, <code>random</code>,
-<code>time</code>, <code>event</code> and <code>moderator</code>. Within
-it, the marker <code><a href="../reference/ilr.html">ilr()</a></code> stands for the whole composition. The
-discrete call <code>outcome = "zbmi", covariates = "sex"</code> can be
-written as the formula <code>zbmi ~ ilr() + sex</code>, and the printed
-fit shows the call with <code><a href="../reference/ilr.html">ilr()</a></code> expanded.</p>
+<p>Instead of passing <code>outcome</code>, <code>covariates</code>,
+<code>random</code>, <code>time</code>, <code>event</code>, or
+<code>moderator</code> separately, you can supply a standard R
+<code>formula</code> using <code><a href="../reference/ilr.html">ilr()</a></code> as a placeholder for the
+composition:</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_main</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/comp_iv.html">comp_iv</a></span><span class="op">(</span>comp <span class="op">=</span> <span class="va">cd</span>, formula <span class="op">=</span> <span class="va">zbmi</span> <span class="op">~</span> <span class="fu"><a href="../reference/ilr.html">ilr</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="va">sex</span>, model <span class="op">=</span> <span class="st">"lm"</span><span class="op">)</span></span>
 <span><span class="va">fit_main</span></span>
@@ -559,18 +410,15 @@ fit shows the call with <code><a href="../reference/ilr.html">ilr()</a></code> e
 <span><span class="co">#&gt; Coefficients:</span></span>
 <span><span class="co">#&gt; (Intercept)         ilr1         ilr2         ilr3      sexmale  </span></span>
 <span><span class="co">#&gt;    -2.34267     -0.70652     -0.47025      1.54824     -0.06241</span></span></code></pre></div>
-<p>Every other term is passed to the backend unchanged, so a formula can
-hold interactions, random terms and transformed variables.
-<code><a href="../reference/ilr.html">ilr()</a></code> is expanded by two rules (<code><a href="../reference/ilr.html">?ilr</a></code>).</p>
-<p>The first rule applies inside the formula operators <code>+</code>,
-<code>-</code>, <code>*</code>, <code>:</code>, <code>/</code>,
-<code>^</code>, <code>%in%</code>, <code>|</code> and <code>||</code>
-and inside parentheses. There, <code><a href="../reference/ilr.html">ilr()</a></code> is replaced by the sum
-<code>(ilr1 + ... + ilr(D-1))</code>, and R’s formula algebra applies to
-it. In an lme4-style engine, <code>(ilr() | school)</code> is a random
-slope on every coordinate. <code>ilr()^2</code> expands to the main
-effects and every pairwise product of the coordinates, with no
-squares.</p>
+<p>All other terms pass through to the backend unchanged, while
+<code><a href="../reference/ilr.html">ilr()</a></code> expands by two rules (<code><a href="../reference/ilr.html">?ilr</a></code>). Inside
+formula operators (<code>+</code>, <code>-</code>, <code>*</code>,
+<code>:</code>, <code>/</code>, <code>^</code>, <code>%in%</code>,
+<code>|</code>, <code>||</code>) and parentheses, <code><a href="../reference/ilr.html">ilr()</a></code>
+becomes <code>(ilr1 + ... + ilr(D-1))</code>, so
+<code>(ilr() | school)</code> adds random slopes on all coordinates and
+<code>ilr() * sex</code> creates the full composition-by-sex
+interaction:</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_int</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/comp_iv.html">comp_iv</a></span><span class="op">(</span>comp <span class="op">=</span> <span class="va">cd</span>, formula <span class="op">=</span> <span class="va">zbmi</span> <span class="op">~</span> <span class="fu"><a href="../reference/ilr.html">ilr</a></span><span class="op">(</span><span class="op">)</span> <span class="op">*</span> <span class="va">sex</span>, model <span class="op">=</span> <span class="st">"lm"</span><span class="op">)</span></span>
 <span><span class="va">fit_int</span></span>
@@ -587,12 +435,12 @@ squares.</p>
 <span><span class="co">#&gt;      -2.2024       -0.6580       -0.3483        1.8404       -0.4386  </span></span>
 <span><span class="co">#&gt; ilr1:sexmale  ilr2:sexmale  ilr3:sexmale  </span></span>
 <span><span class="co">#&gt;      -0.1255       -0.3135       -0.7065</span></span></code></pre></div>
-<p>The second rule applies inside any other call, where
-<code><a href="../reference/ilr.html">ilr()</a></code> is distributed. The call is repeated once per
-coordinate and the copies are added, and <code>I(ilr()^2)</code> becomes
-<code>(I(ilr1^2) + I(ilr2^2) + I(ilr3^2))</code>. Combining both rules,
-the formula <code>ilr()^2 + I(ilr()^2)</code> is the full quadratic in
-the composition, with main effects, pairwise products and squares.</p>
+<p>Inside any other function call, <code><a href="../reference/ilr.html">ilr()</a></code> distributes across
+coordinates—so <code>I(ilr()^2)</code> expands to
+<code>(I(ilr1^2) + I(ilr2^2) + I(ilr3^2))</code>, and
+<code><a href="https://rdrr.io/r/stats/poly.html" class="external-link">poly()</a></code> or <code><a href="https://rdrr.io/r/splines/ns.html" class="external-link">splines::ns()</a></code> distribute the same
+way. Combining both rules gives the full quadratic composition
+model:</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_quad</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/comp_iv.html">comp_iv</a></span><span class="op">(</span>comp <span class="op">=</span> <span class="va">cd</span>, formula <span class="op">=</span> <span class="va">zbmi</span> <span class="op">~</span> <span class="fu"><a href="../reference/ilr.html">ilr</a></span><span class="op">(</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/AsIs.html" class="external-link">I</a></span><span class="op">(</span><span class="fu"><a href="../reference/ilr.html">ilr</a></span><span class="op">(</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span> <span class="op">+</span> <span class="va">sex</span>,</span>
 <span>                    model <span class="op">=</span> <span class="st">"lm"</span><span class="op">)</span></span>
@@ -611,20 +459,18 @@ the composition, with main effects, pairwise products and squares.</p>
 <span><span class="co">#&gt;    -2.42867     -0.98660      0.04431      1.59720     -0.04117      0.53721  </span></span>
 <span><span class="co">#&gt;   I(ilr3^2)      sexmale    ilr1:ilr2    ilr1:ilr3    ilr2:ilr3  </span></span>
 <span><span class="co">#&gt;    -1.06062     -0.07917     -0.15457     -0.22287      0.18520</span></span></code></pre></div>
-<p>The second rule distributes <code>poly(ilr(), 2)</code> and
-<code>splines::ns(ilr(), 3)</code> in the same way.
-<code><a href="../reference/comp_iv.html">comp_iv()</a></code> warns that the estimates may be biased when the
-formula holds <code><a href="../reference/ilr.html">ilr()</a></code> but no coordinate appears as a term of
-its own or as the first argument of <code><a href="https://rdrr.io/r/stats/poly.html" class="external-link">poly()</a></code>,
-<code>ns()</code> or <code>bs()</code>.</p>
+<p>If a formula includes <code><a href="../reference/ilr.html">ilr()</a></code> without any coordinate
+appearing as a standalone term or first argument to <code><a href="https://rdrr.io/r/stats/poly.html" class="external-link">poly()</a></code>,
+<code>ns()</code>, or <code>bs()</code>, <code><a href="../reference/comp_iv.html">comp_iv()</a></code> warns
+that estimates may be biased.</p>
 </div>
-<div class="section level3">
-<h3 id="moderation">Moderation<a class="anchor" aria-label="anchor" href="#moderation"></a>
-</h3>
-<p>To test the interaction of one covariate with the composition, name
-that covariate with <code>moderator</code>. The fit is the model
-<code>zbmi ~ ilr() * sex</code> of <code>fit_int</code> with the
-moderation test added.</p>
+<div class="section level2">
+<h2 id="moderation-and-non-linear-composition-terms">Moderation and non-linear composition terms<a class="anchor" aria-label="anchor" href="#moderation-and-non-linear-composition-terms"></a>
+</h2>
+<p>To test whether the compositional association differs across a
+covariate, naming it in <code>moderator</code> fits the same interaction
+as <code>zbmi ~ ilr() * sex</code> and adds a joint Wald moderation test
+plus per-part interaction columns:</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_mod</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/comp_iv.html">comp_iv</a></span><span class="op">(</span>comp <span class="op">=</span> <span class="va">cd</span>, outcome <span class="op">=</span> <span class="st">"zbmi"</span>, model <span class="op">=</span> <span class="st">"lm"</span>,</span>
 <span>                   moderator <span class="op">=</span> <span class="st">"sex"</span><span class="op">)</span></span>
@@ -644,29 +490,19 @@ moderation test added.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> SB vs remaini… Sede…    1.89     1.40      2.38  5.02<span style="color: #949494;">e</span><span style="color: #BB0000;">-13</span>         1.21       1</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> SPT vs remain… Sleep   -<span style="color: #BB0000;">1.12</span>    -<span style="color: #BB0000;">1.58</span>     -<span style="color: #BB0000;">0.663</span> 2.19<span style="color: #949494;">e</span><span style="color: #BB0000;">- 6</span>         4.59       1</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: mod_p.value &lt;dbl&gt;</span></span></span></code></pre></div>
-<p>The moderation line reports a joint Wald test of the null hypothesis
-that every composition-by-sex coefficient is zero (i.e., that the
-association between the composition and z-BMI does not differ between
-the sexes). For each part, the three new columns
-(<code>mod_statistic</code>, <code>mod_df</code> and
-<code>mod_p.value</code>) hold the test of the null hypothesis that the
-part’s own interaction with sex is zero. For sleep, the test gives p =
-0.0322, with no adjustment for the four tests.</p>
-<p>For reallocation estimates on a fit with a composition-by-covariate
-interaction, see
-<code><a href="../articles/predicting-reallocations.html">vignette("predicting-reallocations", package = "timecoda")</a></code>.</p>
-<p>For a factor <code>moderator</code>, <code>by</code> defaults to the
-moderator when neither <code>by</code> nor <code>at</code> names it.
-<code>fit_int</code>, the formula fit, is the same model, although a
-formula carries no default <code>by</code>. A reallocation on
-<code>fit_int</code> depends on sex, and <code><a href="../reference/predict_realloc.html">predict_realloc()</a></code>
-therefore stops with an error until you give a value for every covariate
-that interacts with the composition, through <code>at</code> or
-<code>by</code>.</p>
-</div>
-<div class="section level3">
-<h3 id="non-linear-composition-terms">Non-linear composition terms<a class="anchor" aria-label="anchor" href="#non-linear-composition-terms"></a>
-</h3>
+<p>Here, the per-part test for sleep yields <span class="math inline">p
+= 0.0322</span> (unadjusted across the four parts). On a
+<code>moderator</code> fit, <code><a href="../reference/predict_realloc.html">predict_realloc()</a></code> automatically
+splits results by a factor moderator unless pinned with <code>at</code>;
+on a raw formula fit like <code>fit_int</code>, you must supply
+<code>by</code> or <code>at</code> explicitly (see
+<code><a href="../articles/predicting-reallocations.html">vignette("predicting-reallocations", package = "timecoda")</a></code>).</p>
+<p>For a quadratic fit like <code>fit_quad</code>,
+<code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> reports a 9-df omnibus test and a joint curvature
+Wald test across all quadratic and cross-product terms. Because no
+single <code>ilr1</code> slope exists when curvature is present, each
+per-part row gives the local slope at the reference composition via
+<code><a href="https://rvlenth.github.io/emmeans/reference/emtrends.html" class="external-link">emmeans::emtrends()</a></code>:</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_quad</span><span class="op">)</span></span>
 <span><span class="co">#&gt; &lt;comp_iv&gt; compositional linear model</span></span>
@@ -685,16 +521,9 @@ that interacts with the composition, through <code>at</code> or
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> SPT vs remaining   Sleep                   -<span style="color: #BB0000;">0.845</span>    -<span style="color: #BB0000;">1.20</span>     -<span style="color: #BB0000;">0.487</span> 5.28<span style="color: #949494;">e</span><span style="color: #BB0000;">- 6</span></span></span>
 <span><span class="co">#&gt; Per-part effects are slopes at the reference composition, from emmeans::emtrends(), as the</span></span>
 <span><span class="co">#&gt; model's composition terms are non-linear or carry no main effect.</span></span></code></pre></div>
-<p>The omnibus test now has 9 degrees of freedom, one for each
-coefficient that involves only the coordinates. The curvature line
-reports a joint Wald test of the null hypothesis that the coefficients
-of the squares and products are all zero (i.e., that the association
-between the composition and z-BMI has no curvature). Because a rotated
-fit with squares and products has no single <code>ilr1</code>
-coefficient, each per-part row is the slope of the linear predictor in
-<code>ilr1</code> at the reference composition, taken from
-<code><a href="https://rvlenth.github.io/emmeans/reference/emtrends.html" class="external-link">emmeans::emtrends()</a></code>. <code><a href="../reference/predict_realloc.html">predict_realloc()</a></code> reads
-the quadratic fit in the same way as a linear one.</p>
+<p>Reallocations and surface plots work identically on quadratic
+fits—notice below that the 30-minute <code>zbmi</code> difference is
+less than three times the 10-minute difference:</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/predict_realloc.html">predict_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_quad</span>, from <span class="op">=</span> <span class="st">"SB"</span>, to <span class="op">=</span> <span class="st">"MVPA"</span>, delta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">30</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 10</span></span></span>
@@ -703,41 +532,25 @@ the quadratic fit in the same way as a linear one.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> SB    MVPA     10   -<span style="color: #BB0000;">0.215</span>    0.016<span style="text-decoration: underline;">0</span>   289   -<span style="color: #BB0000;">0.247</span>    -<span style="color: #BB0000;">0.184</span>     -<span style="color: #BB0000;">13.5</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> SB    MVPA     30   -<span style="color: #BB0000;">0.537</span>    0.042<span style="text-decoration: underline;">9</span>   289   -<span style="color: #BB0000;">0.621</span>    -<span style="color: #BB0000;">0.452</span>     -<span style="color: #BB0000;">12.5</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: p.value &lt;dbl&gt;</span></span></span></code></pre></div>
-<p>We observed that the mean z-BMI difference associated with moving 30
-minutes is less than three times that for 10 minutes.</p>
-<p><code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> draws the fitted surface as one ternary panel for
-each group of three parts. For this figure on a logistic fit, see
-<code><a href="../articles/composition-predictor.html">vignette("composition-predictor", package = "timecoda")</a></code>.</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">fit_quad</span><span class="op">)</span></span></code></pre></div>
 <p><img src="advanced-models_files/figure-html/quadratic-plot-1.png" class="r-plt" alt="One of four ternary panels, one for each group of three parts, of the quadratic linear model's surface of the mean difference in z-BMI from the reference composition as tiles. Several dozen small hexagonal tiles form a patch inside the triangle, coloured from dark purple for the panel's lowest mean difference to yellow for its highest, with a black point at the reference composition; the rest of the triangle is blank grey, and a legend titled Mean difference gives the scale." width="100%"><img src="advanced-models_files/figure-html/quadratic-plot-2.png" class="r-plt" alt="One of four ternary panels, one for each group of three parts, of the quadratic linear model's surface of the mean difference in z-BMI from the reference composition as tiles. Several dozen small hexagonal tiles form a patch inside the triangle, coloured from dark purple for the panel's lowest mean difference to yellow for its highest, with a black point at the reference composition; the rest of the triangle is blank grey, and a legend titled Mean difference gives the scale." width="100%"><img src="advanced-models_files/figure-html/quadratic-plot-3.png" class="r-plt" alt="One of four ternary panels, one for each group of three parts, of the quadratic linear model's surface of the mean difference in z-BMI from the reference composition as tiles. Several dozen small hexagonal tiles form a patch inside the triangle, coloured from dark purple for the panel's lowest mean difference to yellow for its highest, with a black point at the reference composition; the rest of the triangle is blank grey, and a legend titled Mean difference gives the scale." width="100%"><img src="advanced-models_files/figure-html/quadratic-plot-4.png" class="r-plt" alt="One of four ternary panels, one for each group of three parts, of the quadratic linear model's surface of the mean difference in z-BMI from the reference composition as tiles. Several dozen small hexagonal tiles form a patch inside the triangle, coloured from dark purple for the panel's lowest mean difference to yellow for its highest, with a black point at the reference composition; the rest of the triangle is blank grey, and a legend titled Mean difference gives the scale." width="100%"></p>
-<p>The full quadratic is the same model in every ILR basis, so its fit
-and reallocations do not depend on the order of the parts. A
-squares-only specification, <code>ilr() + I(ilr()^2)</code>, and
-<code>poly(ilr(), 2)</code> lack this invariance, and their fits depend
-on the order of the parts given to <code><a href="../reference/declare_composition.html">declare_composition()</a></code>.
-For an example on <code>timeuse</code>, see the help page
-<code><a href="../reference/ilr.html">?ilr</a></code>.</p>
+<p>The full quadratic (<code>ilr()^2 + I(ilr()^2)</code>, or
+<code>curvature = TRUE</code>) is invariant to part order. In contrast,
+squares-only (<code>ilr() + I(ilr()^2)</code>) and
+<code>poly(ilr(), 2)</code> depend on the order in which parts were
+declared (see <code><a href="../reference/ilr.html">?ilr</a></code>).</p>
 </div>
-<div class="section level3">
-<h3 id="the-total-as-a-covariate">The total as a covariate<a class="anchor" aria-label="anchor" href="#the-total-as-a-covariate"></a>
-</h3>
-<p>The total of a composition of the waking behaviours alone
-(moderate-to-vigorous activity, light activity and sedentary behaviour)
-varies between people. To add this total to the model, set
-<code>include_total = TRUE</code>, which enters it as the covariate
-<code>t_total</code> of Coenders et al. (2017),
-<code>t = sqrt(D) * log(g)</code>, where <code>g</code> is the geometric
-mean of a person’s parts on their original scale. The ILR coefficients
-then give the association between the outcome and the shares of waking
-time, at a constant waking time. The coefficient of <code>t_total</code>
-gives the difference in the outcome associated with a longer waking day,
-in which every waking behaviour is larger in the same proportion and
-sleep is shorter.</p>
-<p>The waking composition is declared from the same data with three
-parts. Declared with <code>closure = "mean"</code>, it is reported on
-the scale of the average waking time, and the row totals before closure,
-shown in its summary, are the waking times.</p>
+<div class="section level2">
+<h2 id="varying-total-compositions">Varying-total compositions<a class="anchor" aria-label="anchor" href="#varying-total-compositions"></a>
+</h2>
+<p>When a composition covers only part of the day—such as waking
+behaviours (<code>MVPA</code>, <code>LPA</code>, <code>SB</code>)—row
+totals vary across participants. Declaring the composition with
+<code>closure = "mean"</code> keeps it on the average waking-time scale,
+and <code>include_total = TRUE</code> adds the total covariate <span class="math inline">t_{\mathrm{total}} = \sqrt{D}\ln(g)</span> of
+Coenders et al. (2017), where <span class="math inline">g</span> is each
+person’s unclosed geometric mean:</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cd_wake</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/declare_composition.html">declare_composition</a></span><span class="op">(</span></span>
 <span>  data    <span class="op">=</span> <span class="va">timeuse</span>,</span>
@@ -771,12 +584,11 @@ shown in its summary, are the waking times.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> MVPA vs remaining  Moderate-to-vigorous …   -<span style="color: #BB0000;">1.49</span>    -<span style="color: #BB0000;">1.79</span>     -<span style="color: #BB0000;">1.18</span>  7.75<span style="color: #949494;">e</span><span style="color: #BB0000;">-19</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> LPA vs remaining   Light PA                 -<span style="color: #BB0000;">0.628</span>   -<span style="color: #BB0000;">0.898</span>    -<span style="color: #BB0000;">0.358</span> 6.98<span style="color: #949494;">e</span><span style="color: #BB0000;">- 6</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> SB vs remaining    Sedentary behaviour       2.11     1.65      2.58  3.28<span style="color: #949494;">e</span><span style="color: #BB0000;">-17</span></span></span></code></pre></div>
-<p>The null hypothesis of the one-degree-of-freedom Wald test of
-<code>t_total</code> is that its coefficient is zero (i.e., that waking
-time and z-BMI are not associated at constant shares of waking time). At
-constant shares, a longer waking day, and so a shorter time asleep, is
-associated with a higher z-BMI in these data, as the positive
-coefficient shows.</p>
+<p>The ILR rows now reflect waking-time shares at constant waking
+duration, while the positive <code>t_total</code> coefficient indicates
+that a longer waking day (less sleep, holding waking proportions fixed)
+is associated with higher <code>zbmi</code>. During reallocations,
+<code>t_total</code> is held at its sample mean:</p>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/predict_realloc.html">predict_realloc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_tot</span>, from <span class="op">=</span> <span class="st">"SB"</span>, to <span class="op">=</span> <span class="st">"MVPA"</span>, delta <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 10</span></span></span>
@@ -784,36 +596,22 @@ coefficient shows.</p>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> SB    MVPA     10   -<span style="color: #BB0000;">0.392</span>    0.041<span style="text-decoration: underline;">0</span>   296   -<span style="color: #BB0000;">0.473</span>    -<span style="color: #BB0000;">0.312</span>     -<span style="color: #BB0000;">9.56</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: p.value &lt;dbl&gt;</span></span></span></code></pre></div>
-<p>In a reallocation, every composition is evaluated with
-<code>t_total</code> held at its reference value, the sample mean of
-<code>t_total</code>, and the estimate is therefore the difference
-associated with the move at a constant waking time. On the fixed-total
-<code>cd</code>, <code>include_total = TRUE</code> ends with an
-error.</p>
-</div>
+<p>Using <code>include_total = TRUE</code> requires varying row totals;
+on a fixed-total composition like <code>cd</code>,
+<code><a href="../reference/comp_iv.html">comp_iv()</a></code> stops with an error.</p>
 </div>
 <div class="section level2">
-<h2 id="part-4--diagnostics-per-engine">Part 4. Diagnostics per engine<a class="anchor" aria-label="anchor" href="#part-4--diagnostics-per-engine"></a>
+<h2 id="engine-specific-diagnostics">Engine-specific diagnostics<a class="anchor" aria-label="anchor" href="#engine-specific-diagnostics"></a>
 </h2>
-<p>The diagnostic backend used by <code><a href="../reference/fit_check.html">fit_check()</a></code> depends on
-the model class.</p>
-<div class="section level3">
-<h3 id="models-checked-with-dharma">Models checked with DHARMa<a class="anchor" aria-label="anchor" href="#models-checked-with-dharma"></a>
-</h3>
-<p>For <code>"lm"</code>, <code>"glm"</code>, <code>"lmer"</code> and
-<code>"glmer"</code> fits, <code><a href="../reference/fit_check.html">fit_check()</a></code> uses the DHARMa
-package (Hartig, 2026). For the simulated quantile residuals, see
-<code><a href="../articles/composition-predictor.html">vignette("composition-predictor", package = "timecoda")</a></code>.
-The rows reported for a <code>"glmer"</code> fit are those of a
-<code>"glm"</code> fit.</p>
-</div>
-<div class="section level3">
-<h3 id="cox-models">Cox models<a class="anchor" aria-label="anchor" href="#cox-models"></a>
-</h3>
-<p>A <code>"cox"</code> fit is checked with
-<code><a href="https://rdrr.io/pkg/survival/man/cox.zph.html" class="external-link">survival::cox.zph()</a></code>, a test of the proportional-hazards
-assumption based on the scaled Schoenfeld residuals (Grambsch &amp;
-Therneau, 1994).</p>
+<p>Each model class uses diagnostic checks suited to its likelihood and
+residual structure. <code>"lm"</code>, <code>"glm"</code>,
+<code>"lmer"</code>, and <code>"glmer"</code> fits use
+<code>DHARMa</code> simulated quantile residuals (Hartig, 2026; see
+<code><a href="../articles/composition-predictor.html">vignette("composition-predictor", package = "timecoda")</a></code>).</p>
+<p>For <code>"cox"</code> fits, <code><a href="../reference/fit_check.html">fit_check()</a></code> runs
+<code><a href="https://rdrr.io/pkg/survival/man/cox.zph.html" class="external-link">survival::cox.zph()</a></code> to test proportional hazards via scaled
+Schoenfeld residuals (Grambsch &amp; Therneau, 1994); pass
+<code>plot = TRUE</code> to inspect the residual curves over time:</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fc_cox</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_check.html">fit_check</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_cox</span>, plot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">fc_cox</span></span>
@@ -828,17 +626,10 @@ Therneau, 1994).</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> Proportional hazards: ilr3       0.114     1   0.735</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> Proportional hazards: sex        0.141     1   0.707</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> Proportional hazards: GLOBAL     1.03      4   0.906</span></span></code></pre></div>
-<p>In the global test, we found no evidence of a departure from
-proportional hazards (p = 0.906). To draw the Schoenfeld residuals of
-each term against time, set <code>plot = TRUE</code>.</p>
-</div>
-<div class="section level3">
-<h3 id="ordinal-models">Ordinal models<a class="anchor" aria-label="anchor" href="#ordinal-models"></a>
-</h3>
-<p>A <code>"clm"</code> fit is checked with
-<code><a href="https://rdrr.io/pkg/ordinal/man/nominal.test.html" class="external-link">ordinal::nominal_test()</a></code> (Christensen, 2026) and with the
-sure package (Greenwell et al., 2018), which provides surrogate
-residuals (Liu &amp; Zhang, 2018).</p>
+<p>For <code>"clm"</code> fits, it combines
+<code><a href="https://rdrr.io/pkg/ordinal/man/nominal.test.html" class="external-link">ordinal::nominal_test()</a></code> (Christensen, 2026) with
+<code>sure</code> surrogate residuals under a fixed seed (Greenwell et
+al., 2018; Liu &amp; Zhang, 2018):</p>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fc_clm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_check.html">fit_check</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_clm</span>, plot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">fc_clm</span></span>
@@ -855,17 +646,9 @@ residuals (Liu &amp; Zhang, 2018).</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> Proportional odds: ilr3     0.294     1   0.588</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> AIC                       644.       <span style="color: #BB0000;">NA</span>  <span style="color: #BB0000;">NA</span>    </span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> log-likelihood           -<span style="color: #BB0000;">317.</span>       <span style="color: #BB0000;">NA</span>  <span style="color: #BB0000;">NA</span></span></span></code></pre></div>
-<p>In the proportional-odds tests, we found no evidence of a departure
-from proportional odds for any of the three coordinates (p-values of
-0.262 and above). The surrogate residuals are random draws made under a
-fixed seed and therefore repeat from call to call. To draw them, set
-<code>plot = TRUE</code>.</p>
-</div>
-<div class="section level3">
-<h3 id="robust-models">Robust models<a class="anchor" aria-label="anchor" href="#robust-models"></a>
-</h3>
-<p><code>"lmrob"</code> and <code>"rlmer"</code> fits are checked
-through the robustness weights of their estimates.</p>
+<p>For <code>"lmrob"</code> and <code>"rlmer"</code> fits, it summarizes
+the robustness weights (here, three of 300 observations are downweighted
+below 0.5):</p>
 <div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fc_lmrob</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_check.html">fit_check</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fit_lmrob</span>, plot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">fc_lmrob</span></span>
@@ -879,22 +662,107 @@ through the robustness weights of their estimates.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> Downweighted obs (weight &lt; 0.5)      0.01      <span style="color: #BB0000;">NA</span>  <span style="color: #BB0000;">NA</span>    </span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Minimum robustness weight            0.082<span style="text-decoration: underline;">5</span>    <span style="color: #BB0000;">NA</span>  <span style="color: #BB0000;">NA</span>    </span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> Residual normality (Shapiro-Wilk)    0.994     <span style="color: #BB0000;">NA</span>   0.340</span></span></code></pre></div>
-<p>In this fit, the downweighted share of 0.01 corresponds to three of
-the 300 people, each weighted below 0.5. The rows reported for an
-<code>"rlmer"</code> fit are the same.</p>
+<p>For <code>"clmm"</code>, <code>"mblogit"</code>, and
+<code>"coxme"</code> fits, no residual diagnostic is run;
+<code><a href="../reference/fit_check.html">fit_check()</a></code> reports AIC and log-likelihood only (for
+<code>"coxme"</code>, the penalized log-likelihood and effective degrees
+of freedom).</p>
 </div>
-<div class="section level3">
-<h3 id="engines-with-fit-statistics-only">Engines with fit statistics only<a class="anchor" aria-label="anchor" href="#engines-with-fit-statistics-only"></a>
-</h3>
-<p>For <code>"clmm"</code>, <code>"mblogit"</code> and
-<code>"coxme"</code> fits, no residual diagnostic is run, and
-<code><a href="../reference/fit_check.html">fit_check()</a></code> reports the AIC and the log-likelihood with a
-note and draws nothing. A <code>"clmm"</code> fit therefore has no
-proportional-odds test, and a <code>"coxme"</code> fit has no
-proportional-hazards test. The log-likelihood of a <code>"coxme"</code>
-fit is the penalized one, and the AIC uses the fit’s effective degrees
-of freedom.</p>
-</div>
+<div class="section level2">
+<h2 id="engine-reference">Engine reference<a class="anchor" aria-label="anchor" href="#engine-reference"></a>
+</h2>
+<p>All eleven engines share the same <code><a href="../reference/comp_iv.html">comp_iv()</a></code> interface.
+<code>family</code> is required for <code>"glm"</code> and
+<code>"glmer"</code> (and rejected elsewhere); <code>random</code> is
+required for <code>"lmer"</code>, <code>"glmer"</code>,
+<code>"coxme"</code>, <code>"clmm"</code>, and <code>"rlmer"</code>,
+optional for <code>"mblogit"</code>, and rejected by single-level
+engines.</p>
+<table class="table">
+<colgroup>
+<col width="25%">
+<col width="25%">
+<col width="25%">
+<col width="25%">
+</colgroup>
+<thead><tr class="header">
+<th><code>model</code></th>
+<th>Backend</th>
+<th>Use case</th>
+<th>Effect measure</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>"lm"</code></td>
+<td><code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">stats::lm()</a></code></td>
+<td>Continuous outcome, independent observations</td>
+<td>Mean difference</td>
+</tr>
+<tr class="even">
+<td><code>"glm"</code></td>
+<td><code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">stats::glm()</a></code></td>
+<td>GLM family, independent observations</td>
+<td>Odds, rate, risk, or mean ratio; mean difference</td>
+</tr>
+<tr class="odd">
+<td><code>"cox"</code></td>
+<td><code><a href="https://rdrr.io/pkg/survival/man/coxph.html" class="external-link">survival::coxph()</a></code></td>
+<td>Time-to-event, independent observations</td>
+<td>Hazard ratio (relative only)</td>
+</tr>
+<tr class="even">
+<td><code>"coxme"</code></td>
+<td><code><a href="https://rdrr.io/pkg/coxme/man/coxme.html" class="external-link">coxme::coxme()</a></code></td>
+<td>Time-to-event, clustered or repeated</td>
+<td>Hazard ratio (relative only)</td>
+</tr>
+<tr class="odd">
+<td><code>"lmer"</code></td>
+<td><code><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lme4::lmer()</a></code></td>
+<td>Continuous outcome, clustered or repeated</td>
+<td>Mean difference</td>
+</tr>
+<tr class="even">
+<td><code>"glmer"</code></td>
+<td><code><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">lme4::glmer()</a></code></td>
+<td>GLM family, clustered or repeated</td>
+<td>Set by link, as for <code>"glm"</code>
+</td>
+</tr>
+<tr class="odd">
+<td><code>"clm"</code></td>
+<td><code><a href="https://rdrr.io/pkg/ordinal/man/clm.html" class="external-link">ordinal::clm()</a></code></td>
+<td>Ordered-factor outcome</td>
+<td>Cumulative odds ratio (relative only)</td>
+</tr>
+<tr class="even">
+<td><code>"clmm"</code></td>
+<td><code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm()</a></code></td>
+<td>Ordered-factor outcome, clustered or repeated</td>
+<td>Cumulative odds ratio (relative only)</td>
+</tr>
+<tr class="odd">
+<td><code>"mblogit"</code></td>
+<td><code><a href="https://melff.github.io/mclogit/reference/mblogit.html" class="external-link">mclogit::mblogit()</a></code></td>
+<td>Unordered-factor outcome (3+ levels), optional
+<code>random</code>
+</td>
+<td>Relative-risk ratio per category (relative only)</td>
+</tr>
+<tr class="even">
+<td><code>"lmrob"</code></td>
+<td><code><a href="https://rdrr.io/pkg/robustbase/man/lmrob.html" class="external-link">robustbase::lmrob()</a></code></td>
+<td>Continuous outcome, outlier-robust MM-estimation</td>
+<td>Mean difference</td>
+</tr>
+<tr class="odd">
+<td><code>"rlmer"</code></td>
+<td><code><a href="https://rdrr.io/pkg/robustlmm/man/rlmer.html" class="external-link">robustlmm::rlmer()</a></code></td>
+<td>Continuous outcome, outlier-robust and clustered</td>
+<td>Mean difference</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
@@ -941,16 +809,15 @@ estimates for regression. <em>The Annals of Statistics</em>, 15,
 <ul>
 <li>
 <code><a href="../articles/composition-predictor.html">vignette("composition-predictor", package = "timecoda")</a></code>:
-the linear and logistic fits, the summary read line by line, and the
-fitted surface.</li>
+linear and logistic fits, summary interpretation, and fitted
+surfaces.</li>
 <li>
 <code><a href="../articles/predicting-reallocations.html">vignette("predicting-reallocations", package = "timecoda")</a></code>:
-reallocation estimates, their schemes and anchors, the publication table
-and the reallocation figure.</li>
+reallocation estimates, schemes, reference days, publication tables, and
+transfer curves.</li>
 <li>
 <code><a href="../articles/optimal-composition.html">vignette("optimal-composition", package = "timecoda")</a></code>:
-the search for the Goldilocks zone, the compositions with the best
-predicted outcome.</li>
+searching for the Goldilocks zone.</li>
 <li>
 <code><a href="../articles/timecoda.html">vignette("timecoda", package = "timecoda")</a></code>: the whole
 workflow in one analysis.</li>

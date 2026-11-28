@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">timecoda</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.6.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.6.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,61 +70,32 @@
       <h1>Working with a compositional variable</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/MarcusVVLopes/timecoda/blob/v0.6.0/vignettes/composition-variable.Rmd" class="external-link"><code>vignettes/composition-variable.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/MarcusVVLopes/timecoda/blob/main/vignettes/composition-variable.Rmd" class="external-link"><code>vignettes/composition-variable.Rmd</code></a></small>
       <div class="d-none name"><code>composition-variable.Rmd</code></div>
     </div>
 
     
     
+<p>Before fitting a compositional model, raw time-use columns need to be
+validated, cleared of zeroes, screened for multivariate outliers, and
+closed to a common total (Aitchison, 1986; Dumuid et al., 2020; Pedišić
+et al., 2017). In <code>timecoda</code>,
+<code><a href="../reference/declare_composition.html">declare_composition()</a></code> handles these steps once and stores
+the result in a <code>compD</code> object reused by every modelling and
+plotting function.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://marcusvvlopes.github.io/timecoda/">timecoda</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
-<h2 id="compositional-data">Compositional data<a class="anchor" aria-label="anchor" href="#compositional-data"></a>
+<h2 id="declaring-and-summarizing-a-composition">Declaring and summarizing a composition<a class="anchor" aria-label="anchor" href="#declaring-and-summarizing-a-composition"></a>
 </h2>
-<p>Given that the parts of a composition sum to a constant, a minute
-added to one behaviour is taken from another, and a group that spends
-more time in one part spends less in at least one other (Dumuid et al.,
-2020; Pedišić et al., 2017). Separate comparisons of each part therefore
-test quantities that cannot vary independently, and statistics computed
-directly on the parts are distorted by the constraint.</p>
-<p>Compositional analysis instead works on the log-ratios between parts,
-which are unconstrained and carry the relative information in a
-composition (Aitchison, 1986; Dumuid et al., 2020). Isometric log-ratio
-(ILR) coordinates express a <code>D</code>-part composition as
-<code>D - 1</code> unconstrained real numbers that retain all of its
-relative information (Egozcue et al., 2003). Pivot coordinates, a family
-of ILR coordinates, contrast the first part with the geometric mean of
-all the others in the first coordinate (Filzmoser et al., 2018).</p>
-<p>In <code>timecoda</code>, a composition is represented by a
-<code>compD</code> object built with <code><a href="../reference/declare_composition.html">declare_composition()</a></code>.
-You declare the part names, the reporting scale and the treatment of
-zeroes there once, and every later function in the package takes that
-object in place of the raw columns.</p>
-<p>The examples use the bundled <code>timeuse</code> data, a simulated
-sample of 300 participants whose days are divided into four parts,
-namely moderate-to-vigorous physical activity (<code>MVPA</code>), light
-physical activity (<code>LPA</code>), sedentary behaviour
-(<code>SB</code>) and sleep (<code>SPT</code>, the sleep period
-time).</p>
-</div>
-<div class="section level2">
-<h2 id="part-1--the-declare-pipeline">Part 1. The declare pipeline<a class="anchor" aria-label="anchor" href="#part-1--the-declare-pipeline"></a>
-</h2>
-<div class="section level3">
-<h3 id="what-declare_composition-does">What <code>declare_composition()</code> does<a class="anchor" aria-label="anchor" href="#what-declare_composition-does"></a>
-</h3>
-<p>A single call to <code><a href="../reference/declare_composition.html">declare_composition()</a></code> runs five steps,
-two of them conditional, and three of the steps are also exported as
-functions you can run on their own.</p>
-<p><img src="declare-pipeline.svg" class="r-plt" alt="Flowchart of the declare_composition() pipeline: validate the parts, resolve the scale and labels, impute zeroes when present, flag outliers when requested, close the composition, and return a compD object." width="82%"></p>
-</div>
-<div class="section level3">
-<h3 id="a-complete-declaration">A complete declaration<a class="anchor" aria-label="anchor" href="#a-complete-declaration"></a>
-</h3>
-<p>To make the results reproducible, set a seed first, because outlier
-detection draws a random subset.</p>
+<p>Using the four daily behaviours in <code>timeuse</code>
+(<code>MVPA</code>, <code>LPA</code>, <code>SB</code>,
+<code>SPT</code>), we declare a 1,440-minute composition with
+multivariate outlier detection turned on. Because outlier detection
+draws random subsets for the minimum covariance determinant (MCD)
+estimator, we set a seed first:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2828</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">cd</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/declare_composition.html">declare_composition</a></span><span class="op">(</span></span>
 <span>  data            <span class="op">=</span> <span class="va">timeuse</span>,</span>
@@ -139,13 +110,9 @@ detection draws a random subset.</p>
 <span>  impute_method   <span class="op">=</span> <span class="st">"lrEM"</span>,</span>
 <span>  detect_outliers <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  outlier_args    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>quantile <span class="op">=</span> <span class="fl">0.975</span><span class="op">)</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="reading-the-summary">Reading the summary<a class="anchor" aria-label="anchor" href="#reading-the-summary"></a>
-</h3>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">cd</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">cd</span><span class="op">)</span></span>
 <span><span class="co">#&gt; &lt;compD&gt; compositional variable summary</span></span>
 <span><span class="co">#&gt;   Parts: Moderate-to-vigorous PA, Light PA, Sedentary behaviour, Sleep</span></span>
 <span><span class="co">#&gt;   Closure: 1440</span></span>
@@ -173,92 +140,29 @@ detection draws a random subset.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> LPA   Light PA                 1.67 0     0.247 0.260</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> SB    Sedentary behaviour      1.55 0.247 0     0.140</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> SPT   Sleep                    1.44 0.260 0.140 0</span></span></code></pre></div>
-<p>The row totals in the header are taken before closure, and totals
-that differ appreciably from the declared closure show that the data
-were rescaled by that amount.</p>
-<p>With outlier flagging, the summary also reports the number of
-observations flagged and the cutoff they exceeded, the square root of
-the 97.5th percentile of a chi-squared distribution on
-<code>D - 1</code> degrees of freedom. The probability printed beside
-the cutoff is the <code>quantile</code> you declared.</p>
-<p>The geometric mean is computed from the imputed, closed composition,
-whereas the other columns describe each part as recorded, with zeroes
-included and before closure.</p>
-<p>The variation matrix holds <code>var(log(x_i / x_j))</code> for every
-pair of parts and is the compositional counterpart of a correlation
-matrix (Dumuid et al., 2020; Pedišić et al., 2017). A small entry marks
-two parts that vary proportionally to one another, and a large entry two
-parts that vary largely independently. Sedentary behaviour and sleep
-have the smallest entry, so their ratio is the most stable across the
-sample.</p>
-</div>
+<p>In these data, raw row totals already sum to 1,440 minutes (no
+rescaling was needed), and <code>SB</code> and <code>SPT</code> show the
+smallest pairwise log-ratio variance (0.140), meaning their ratio is the
+most stable across participants.</p>
+<p>Behind the scenes, <code><a href="../reference/declare_composition.html">declare_composition()</a></code> runs up to five
+steps, three of which are also exported as standalone functions
+(<code><a href="../reference/check_composition.html">check_composition()</a></code>, <code><a href="../reference/comp_impute.html">comp_impute()</a></code>, and
+<code><a href="../reference/comp_outliers.html">comp_outliers()</a></code>):</p>
+<p><img src="declare-pipeline.svg" class="r-plt" alt="Flowchart of the declare_composition() pipeline: validate the parts, resolve the scale and labels, impute zeroes when present, flag outliers when requested, close the composition, and return a compD object." width="82%"></p>
 </div>
 <div class="section level2">
-<h2 id="part-2--the-steps-in-detail">Part 2. The steps in detail<a class="anchor" aria-label="anchor" href="#part-2--the-steps-in-detail"></a>
+<h2 id="handling-zeroes">Handling zeroes<a class="anchor" aria-label="anchor" href="#handling-zeroes"></a>
 </h2>
-<div class="section level3">
-<h3 id="validation">Validation<a class="anchor" aria-label="anchor" href="#validation"></a>
-</h3>
-<p><code><a href="../reference/check_composition.html">check_composition()</a></code> is run before anything else, and the
-call stops with a message naming the part at fault when a part is absent
-from the data, non-numeric, incomplete or negative. Zeroes are allowed
-here because the next step imputes them.</p>
-<p>To screen data before you declare a composition, call the exported
-function on its own. To check that every row sums to the expected value
-within a tolerance, set <code>total</code>. This check detects
-accelerometer or diary records that do not account for a full day.</p>
-</div>
-<div class="section level3">
-<h3 id="the-reporting-scale">The reporting scale<a class="anchor" aria-label="anchor" href="#the-reporting-scale"></a>
-</h3>
-<p>To fix the scale on which the composition is reported, set
-<code>closure</code>. It accepts a positive number or one of two
-strings, and its value is stored on the object and shared by every
-downstream summary, plot and prediction.</p>
-<table class="table">
-<thead><tr class="header">
-<th>Value</th>
-<th>Result</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><code>1440</code></td>
-<td>minutes per day</td>
-</tr>
-<tr class="even">
-<td>
-<code>1</code> (default)</td>
-<td>proportions</td>
-</tr>
-<tr class="odd">
-<td>
-<code>100</code> or <code>"percent"</code>
-</td>
-<td>percentages</td>
-</tr>
-<tr class="even">
-<td><code>"mean"</code></td>
-<td>the average of the observed row totals</td>
-</tr>
-</tbody>
-</table>
-<p>Use <code>"mean"</code> for records that vary in duration and have no
-nominal total, because it reports the composition on the scale observed
-in the data. For records whose totals vary between people, see the
-section on the total as a covariate in
-<code><a href="../articles/advanced-models.html">vignette("advanced-models", package = "timecoda")</a></code>.</p>
-</div>
-<div class="section level3">
-<h3 id="zero-imputation">Zero imputation<a class="anchor" aria-label="anchor" href="#zero-imputation"></a>
-</h3>
-<p>A zero in a compositional part usually reflects a value below the
-resolution of the measurement, and <code><a href="../reference/comp_impute.html">comp_impute()</a></code> replaces
-zeroes with small positive values using the imputation methods of the
-<code>zCompositions</code> package (Palarea-Albaladejo &amp;
-Martín-Fernández, 2015).</p>
-<p><code>timeuse</code> contains no zeroes, so five values of
-<code>MVPA</code> are set to zero in the example.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<p>Zeroes in time-use recordings usually reflect rounded values below
+device resolution rather than true structural absences. When zeroes are
+present, <code><a href="../reference/declare_composition.html">declare_composition()</a></code> imputes them on the original
+unclosed scale via <code>zCompositions</code> (Palarea-Albaladejo &amp;
+Martín-Fernández, 2015), preserving raw row totals for models that use
+them.</p>
+<p>Because <code>timeuse</code> contains no zeroes, we set five
+<code>MVPA</code> observations to zero and replace them using
+multiplicative replacement (<code>"multRepl"</code>):</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">z</span> <span class="op">&lt;-</span> <span class="va">timeuse</span></span>
 <span><span class="va">z</span><span class="op">$</span><span class="va">MVPA</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
 <span></span>
@@ -285,73 +189,36 @@ Martín-Fernández, 2015).</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> LPA   LPA       236.  243.   86.9  232.  173.  308.   51.8  504.</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> SB    SB        678.  661.  118.   669.  586.  743.  316.  <span style="text-decoration: underline;">1</span>037.</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> SPT   SPT       500.  491.  106.   489.  426.  559.  240.   815.</span></span></code></pre></div>
-<p>By default, the detection limit of a part is the smallest positive
-value observed for it, and each imputed value lies below that limit. To
-use a limit defined by the measuring instrument, supply it directly
-through <code>dl</code>.</p>
-<p>To choose the imputation method, set <code>impute_method</code> to
-one of the five methods below.</p>
-<table class="table">
-<thead><tr class="header">
-<th>Method</th>
-<th>Approach</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td>
-<code>"lrEM"</code> (default)</td>
-<td>log-ratio expectation-maximization</td>
-</tr>
-<tr class="even">
-<td><code>"multRepl"</code></td>
-<td>multiplicative replacement</td>
-</tr>
-<tr class="odd">
-<td><code>"lrDA"</code></td>
-<td>log-ratio data augmentation</td>
-</tr>
-<tr class="even">
-<td><code>"multLN"</code></td>
-<td>multiplicative lognormal</td>
-</tr>
-<tr class="odd">
-<td><code>"lrSVD"</code></td>
-<td>singular value decomposition</td>
-</tr>
-</tbody>
-</table>
-<p><code>"lrEM"</code> is the default because it estimates replacement
-values from the covariance structure of the remaining parts, while
-<code>"multRepl"</code> is the simplest method and is adequate when
-zeroes are few. To pass controls specific to a method, use
-<code>...</code>.</p>
-<p>Imputation is run on the original scale, before closure, so each
-row’s absolute total is preserved for the models that use it.</p>
+<p>By default, each part’s detection limit is its smallest observed
+positive value, and replacements fall below that limit; if your
+measuring instrument has a known threshold, pass it through
+<code>dl</code>. The default <code>impute_method = "lrEM"</code> uses
+log-ratio expectation-maximization to draw on the covariance of the
+remaining parts, while <code>"multRepl"</code> is a simpler choice when
+zeroes are rare. Three other <code>zCompositions</code>
+methods—<code>"lrDA"</code> (data augmentation), <code>"multLN"</code>
+(multiplicative lognormal), and <code>"lrSVD"</code> (singular value
+decomposition)—are also available, with method-specific controls passed
+via <code>...</code>.</p>
 </div>
-<div class="section level3">
-<h3 id="outlier-flagging">Outlier flagging<a class="anchor" aria-label="anchor" href="#outlier-flagging"></a>
-</h3>
-<p>A compositional outlier is an observation with atypical ratios
-between parts, and such observations cannot be seen when the parts are
-examined one at a time. A participant reporting fourteen hours of sleep
-and no moderate-to-vigorous activity, for example, may fall within the
-observed range of every individual part and still lie far from the
-centre of the simplex. Every model in this package is fitted on
-log-ratio coordinates, so an observation of this kind exerts leverage on
-every estimate derived from the composition.</p>
-<p><code><a href="../reference/comp_outliers.html">comp_outliers()</a></code> implements the method of Filzmoser and
-Hron (2008), in which the robust Mahalanobis distance of each
-observation from the centre is computed in pivot log-ratio coordinates
-with the minimum covariance determinant estimator and then compared
-against a chi-squared cutoff.</p>
-<p>The distance is invariant to the closure of the composition and to
-the choice of log-ratio pivot, so the flags are the same whatever scale
-the parts are reported on and whatever order they are listed in.</p>
-<p>If you set <code>quantile</code> above the default
-<code>0.975</code>, the cutoff widens and fewer observations are
-flagged.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
+<div class="section level2">
+<h2 id="screening-for-simplex-outliers">Screening for simplex outliers<a class="anchor" aria-label="anchor" href="#screening-for-simplex-outliers"></a>
+</h2>
+<p>A participant can fall within the univariate range of every single
+behaviour and still sit far from the sample centre in log-ratio space
+(for instance, 14 hours of sleep paired with almost no
+<code>MVPA</code>). Because regression models are fitted on ILR
+coordinates, such observations can exert heavy leverage.</p>
+<p>To flag these multivariate outliers, <code><a href="../reference/comp_outliers.html">comp_outliers()</a></code>
+(triggered by <code>detect_outliers = TRUE</code>) computes robust
+Mahalanobis distances in pivot ILR coordinates using the MCD estimator
+and flags values exceeding the <span class="math inline">\sqrt{\chi^2_{D-1,\,q}}</span> cutoff (Filzmoser
+&amp; Hron, 2008). Because this distance is affine-invariant, flags do
+not depend on closure scale or part order (Egozcue et al., 2003;
+Filzmoser et al., 2018). Raising <code>quantile</code> above the default
+<code>0.975</code> widens the cutoff and flags fewer observations:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2828</span><span class="op">)</span></span>
 <span><span class="va">cd_strict</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/declare_composition.html">declare_composition</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">timeuse</span>,</span>
 <span>                                 parts <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"MVPA"</span>, <span class="st">"LPA"</span>, <span class="st">"SB"</span>, <span class="st">"SPT"</span><span class="op">)</span>,</span>
 <span>                                 closure <span class="op">=</span> <span class="fl">1440</span>, detect_outliers <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -366,40 +233,62 @@ flagged.</p>
 <span><span class="co">#&gt;   Row totals (before closure): mean 1440.0 (SD 0.0), range 1440.0-1440.0</span></span>
 <span><span class="co">#&gt;   No zeroes detected.</span></span>
 <span><span class="co">#&gt;   Outliers flagged: 8 of 300 (2.7%) beyond the robust Mahalanobis cutoff 3.37 (chi-squared 0.990)</span></span></code></pre></div>
-<p>Flagged observations are never removed, and every element of the
-object keeps one entry per input observation.</p>
-</div>
+<p>Flagged observations are never removed automatically, so row
+alignment with outcomes and covariates stays intact.</p>
 </div>
 <div class="section level2">
-<h2 id="part-3--describing-a-declared-composition">Part 3. Describing a declared composition<a class="anchor" aria-label="anchor" href="#part-3--describing-a-declared-composition"></a>
+<h2 id="diagnostic-plots-and-publication-tables">Diagnostic plots and publication tables<a class="anchor" aria-label="anchor" href="#diagnostic-plots-and-publication-tables"></a>
 </h2>
-<div class="section level3">
-<h3 id="publication-tables">Publication tables<a class="anchor" aria-label="anchor" href="#publication-tables"></a>
-</h3>
-<p>The descriptive tables returned by <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> have full
-numeric precision for further computation. To round them for
-publication, use <code><a href="../reference/pub_ready.html">pub_ready()</a></code>, which builds the table with
-the <code>gt</code> package, a suggested package that no other function
-requires.</p>
+<p>To explore the declared composition visually, <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>
+draws five optional panels (<code>histogram</code>,
+<code>boxplot</code>, <code>ternary</code>, <code>variation</code>, and
+<code>outliers</code>) by default and returns them invisibly so you can
+modify or subset them. We can inspect univariate distributions alongside
+the variation-matrix heatmap by switching off the ternary and outlier
+panels:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">cd</span>, ternary <span class="op">=</span> <span class="cn">FALSE</span>, outliers <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<p><img src="composition-variable_files/figure-html/plot-basic-1.png" class="r-plt" alt="Density curves and boxplots of the four parts, and a heatmap of the variation matrix." width="100%"><img src="composition-variable_files/figure-html/plot-basic-2.png" class="r-plt" alt="Density curves and boxplots of the four parts, and a heatmap of the variation matrix." width="100%"><img src="composition-variable_files/figure-html/plot-basic-3.png" class="r-plt" alt="Density curves and boxplots of the four parts, and a heatmap of the variation matrix." width="100%"></p>
+<p>With outlier detection enabled, we can also plot each participant’s
+robust Mahalanobis distance against the cutoff:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">cd</span>, histogram <span class="op">=</span> <span class="cn">FALSE</span>, boxplot <span class="op">=</span> <span class="cn">FALSE</span>, ternary <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>     variation <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<p><img src="composition-variable_files/figure-html/plot-outliers-1.png" class="r-plt" alt="Robust Mahalanobis distance of each observation, with the outlier cutoff drawn as a dashed line." width="100%"></p>
+<p>For <span class="math inline">D</span> parts, <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>
+draws <span class="math inline">\binom{D}{3}</span> ternary projections.
+Declaring a three-part subcomposition (<code>MVPA</code>,
+<code>LPA</code>, <code>SB</code>) gives a single ternary projection,
+drawn with the closed geometric mean marked by crosshairs and again with
+the flagged outliers highlighted, beside the distance plot:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">cd3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/declare_composition.html">declare_composition</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">timeuse</span>, parts <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"MVPA"</span>, <span class="st">"LPA"</span>, <span class="st">"SB"</span><span class="op">)</span>,</span>
+<span>                           closure <span class="op">=</span> <span class="fl">1440</span>, detect_outliers <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">cd3</span>, histogram <span class="op">=</span> <span class="cn">FALSE</span>, boxplot <span class="op">=</span> <span class="cn">FALSE</span>, variation <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<p><img src="composition-variable_files/figure-html/plot-ternary-1.png" class="r-plt" alt="Ternary plot of MVPA, LPA and SB with the geometric mean marked, a plot of each observation's robust Mahalanobis distance against the cutoff, and the ternary plot again with the flagged observations highlighted." width="100%"><img src="composition-variable_files/figure-html/plot-ternary-2.png" class="r-plt" alt="Ternary plot of MVPA, LPA and SB with the geometric mean marked, a plot of each observation's robust Mahalanobis distance against the cutoff, and the ternary plot again with the flagged observations highlighted." width="100%"><img src="composition-variable_files/figure-html/plot-ternary-3.png" class="r-plt" alt="Ternary plot of MVPA, LPA and SB with the geometric mean marked, a plot of each observation's robust Mahalanobis distance against the cutoff, and the ternary plot again with the flagged observations highlighted." width="100%"></p>
+<p>To format the descriptive summary as a <code>gt</code> table for a
+manuscript, pass it to <code><a href="../reference/pub_ready.html">pub_ready()</a></code>:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/pub_ready.html">pub_ready</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">cd</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">$</span><span class="va">desc</span></span></code></pre></div>
-<div id="hwtqpfosmf" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#hwtqpfosmf table {
+<div id="njqntwoaqg" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#njqntwoaqg table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#hwtqpfosmf thead, #hwtqpfosmf tbody, #hwtqpfosmf tfoot, #hwtqpfosmf tr, #hwtqpfosmf td, #hwtqpfosmf th {
+#njqntwoaqg thead, #njqntwoaqg tbody, #njqntwoaqg tfoot, #njqntwoaqg tr, #njqntwoaqg td, #njqntwoaqg th {
   border-style: none;
 }
 
-#hwtqpfosmf p {
+#njqntwoaqg p {
   margin: 0;
   padding: 0;
 }
 
-#hwtqpfosmf .gt_table {
+#njqntwoaqg .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -425,12 +314,12 @@ requires.</p>
   border-left-color: #D3D3D3;
 }
 
-#hwtqpfosmf .gt_caption {
+#njqntwoaqg .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#hwtqpfosmf .gt_title {
+#njqntwoaqg .gt_title {
   color: #333333;
   font-size: 13px;
   font-weight: initial;
@@ -442,7 +331,7 @@ requires.</p>
   border-bottom-width: 0;
 }
 
-#hwtqpfosmf .gt_subtitle {
+#njqntwoaqg .gt_subtitle {
   color: #333333;
   font-size: 11px;
   font-weight: initial;
@@ -454,7 +343,7 @@ requires.</p>
   border-top-width: 0;
 }
 
-#hwtqpfosmf .gt_heading {
+#njqntwoaqg .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -466,13 +355,13 @@ requires.</p>
   border-right-color: #D3D3D3;
 }
 
-#hwtqpfosmf .gt_bottom_border {
+#njqntwoaqg .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#hwtqpfosmf .gt_col_headings {
+#njqntwoaqg .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -487,7 +376,7 @@ requires.</p>
   border-right-color: #D3D3D3;
 }
 
-#hwtqpfosmf .gt_col_heading {
+#njqntwoaqg .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -507,7 +396,7 @@ requires.</p>
   overflow-x: hidden;
 }
 
-#hwtqpfosmf .gt_column_spanner_outer {
+#njqntwoaqg .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -519,15 +408,15 @@ requires.</p>
   padding-right: 4px;
 }
 
-#hwtqpfosmf .gt_column_spanner_outer:first-child {
+#njqntwoaqg .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#hwtqpfosmf .gt_column_spanner_outer:last-child {
+#njqntwoaqg .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#hwtqpfosmf .gt_column_spanner {
+#njqntwoaqg .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -539,11 +428,11 @@ requires.</p>
   width: 100%;
 }
 
-#hwtqpfosmf .gt_spanner_row {
+#njqntwoaqg .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#hwtqpfosmf .gt_group_heading {
+#njqntwoaqg .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -569,7 +458,7 @@ requires.</p>
   text-align: left;
 }
 
-#hwtqpfosmf .gt_empty_group_heading {
+#njqntwoaqg .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -584,15 +473,15 @@ requires.</p>
   vertical-align: middle;
 }
 
-#hwtqpfosmf .gt_from_md > :first-child {
+#njqntwoaqg .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#hwtqpfosmf .gt_from_md > :last-child {
+#njqntwoaqg .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#hwtqpfosmf .gt_row {
+#njqntwoaqg .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -611,7 +500,7 @@ requires.</p>
   overflow-x: hidden;
 }
 
-#hwtqpfosmf .gt_stub {
+#njqntwoaqg .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -624,7 +513,7 @@ requires.</p>
   padding-right: 5px;
 }
 
-#hwtqpfosmf .gt_stub_row_group {
+#njqntwoaqg .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -638,15 +527,15 @@ requires.</p>
   vertical-align: top;
 }
 
-#hwtqpfosmf .gt_row_group_first td {
+#njqntwoaqg .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#hwtqpfosmf .gt_row_group_first th {
+#njqntwoaqg .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#hwtqpfosmf .gt_summary_row {
+#njqntwoaqg .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -656,16 +545,16 @@ requires.</p>
   padding-right: 5px;
 }
 
-#hwtqpfosmf .gt_first_summary_row {
+#njqntwoaqg .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#hwtqpfosmf .gt_first_summary_row.thick {
+#njqntwoaqg .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#hwtqpfosmf .gt_last_summary_row {
+#njqntwoaqg .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -675,7 +564,7 @@ requires.</p>
   border-bottom-color: #D3D3D3;
 }
 
-#hwtqpfosmf .gt_grand_summary_row {
+#njqntwoaqg .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -685,7 +574,7 @@ requires.</p>
   padding-right: 5px;
 }
 
-#hwtqpfosmf .gt_first_grand_summary_row {
+#njqntwoaqg .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -695,7 +584,7 @@ requires.</p>
   border-top-color: #D3D3D3;
 }
 
-#hwtqpfosmf .gt_last_grand_summary_row_top {
+#njqntwoaqg .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -705,11 +594,11 @@ requires.</p>
   border-bottom-color: #D3D3D3;
 }
 
-#hwtqpfosmf .gt_striped {
+#njqntwoaqg .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#hwtqpfosmf .gt_table_body {
+#njqntwoaqg .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -718,7 +607,7 @@ requires.</p>
   border-bottom-color: #D3D3D3;
 }
 
-#hwtqpfosmf .gt_footnotes {
+#njqntwoaqg .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -732,7 +621,7 @@ requires.</p>
   border-right-color: #D3D3D3;
 }
 
-#hwtqpfosmf .gt_footnote {
+#njqntwoaqg .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -741,7 +630,7 @@ requires.</p>
   padding-right: 5px;
 }
 
-#hwtqpfosmf .gt_sourcenotes {
+#njqntwoaqg .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -755,7 +644,7 @@ requires.</p>
   border-right-color: #D3D3D3;
 }
 
-#hwtqpfosmf .gt_sourcenote {
+#njqntwoaqg .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -763,72 +652,72 @@ requires.</p>
   padding-right: 5px;
 }
 
-#hwtqpfosmf .gt_left {
+#njqntwoaqg .gt_left {
   text-align: left;
 }
 
-#hwtqpfosmf .gt_center {
+#njqntwoaqg .gt_center {
   text-align: center;
 }
 
-#hwtqpfosmf .gt_right {
+#njqntwoaqg .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#hwtqpfosmf .gt_font_normal {
+#njqntwoaqg .gt_font_normal {
   font-weight: normal;
 }
 
-#hwtqpfosmf .gt_font_bold {
+#njqntwoaqg .gt_font_bold {
   font-weight: bold;
 }
 
-#hwtqpfosmf .gt_font_italic {
+#njqntwoaqg .gt_font_italic {
   font-style: italic;
 }
 
-#hwtqpfosmf .gt_super {
+#njqntwoaqg .gt_super {
   font-size: 65%;
 }
 
-#hwtqpfosmf .gt_footnote_marks {
+#njqntwoaqg .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#hwtqpfosmf .gt_asterisk {
+#njqntwoaqg .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#hwtqpfosmf .gt_indent_1 {
+#njqntwoaqg .gt_indent_1 {
   text-indent: 5px;
 }
 
-#hwtqpfosmf .gt_indent_2 {
+#njqntwoaqg .gt_indent_2 {
   text-indent: 10px;
 }
 
-#hwtqpfosmf .gt_indent_3 {
+#njqntwoaqg .gt_indent_3 {
   text-indent: 15px;
 }
 
-#hwtqpfosmf .gt_indent_4 {
+#njqntwoaqg .gt_indent_4 {
   text-indent: 20px;
 }
 
-#hwtqpfosmf .gt_indent_5 {
+#njqntwoaqg .gt_indent_5 {
   text-indent: 25px;
 }
 
-#hwtqpfosmf .katex-display {
+#njqntwoaqg .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#hwtqpfosmf div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#njqntwoaqg div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -876,46 +765,60 @@ requires.</p>
 </table>
 </div>
 </div>
-<div class="section level3">
-<h3 id="figures">Figures<a class="anchor" aria-label="anchor" href="#figures"></a>
-</h3>
-<p>To plot the composition, use <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>, which draws a set
-of panels describing the composition and returns them invisibly, so you
-can modify them later. Each panel has its own argument, so you can
-request any subset of them.</p>
-<p>The first group shows the distribution of each part and, as a
-heatmap, the variation matrix of Part 1, in which darker cells mark
-pairs of parts that vary proportionally.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">cd</span>, ternary <span class="op">=</span> <span class="cn">FALSE</span>, outliers <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="composition-variable_files/figure-html/plot-basic-1.png" class="r-plt" alt="Density curves and boxplots of the four parts, and a heatmap of the variation matrix." width="100%"><img src="composition-variable_files/figure-html/plot-basic-2.png" class="r-plt" alt="Density curves and boxplots of the four parts, and a heatmap of the variation matrix." width="100%"><img src="composition-variable_files/figure-html/plot-basic-3.png" class="r-plt" alt="Density curves and boxplots of the four parts, and a heatmap of the variation matrix." width="100%"></p>
-<p>Once outliers have been flagged, a further panel shows each
-observation’s distance against the cutoff, with the flagged observations
-lying above the dashed line.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">cd</span>, histogram <span class="op">=</span> <span class="cn">FALSE</span>, boxplot <span class="op">=</span> <span class="cn">FALSE</span>, ternary <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>     variation <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="composition-variable_files/figure-html/plot-outliers-1.png" class="r-plt" alt="Robust Mahalanobis distance of each observation, with the outlier cutoff drawn as a dashed line." width="100%"></p>
-<div class="section level4">
-<h4 id="ternary-plots">Ternary plots<a class="anchor" aria-label="anchor" href="#ternary-plots"></a>
-</h4>
-<p>A composition of <code>D</code> parts yields
-<code>choose(D, 3)</code> panels, so three declared parts give one panel
-of each kind.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
-<span><span class="va">cd3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/declare_composition.html">declare_composition</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">timeuse</span>, parts <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"MVPA"</span>, <span class="st">"LPA"</span>, <span class="st">"SB"</span><span class="op">)</span>,</span>
-<span>                           closure <span class="op">=</span> <span class="fl">1440</span>, detect_outliers <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">cd3</span>, histogram <span class="op">=</span> <span class="cn">FALSE</span>, boxplot <span class="op">=</span> <span class="cn">FALSE</span>, variation <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="composition-variable_files/figure-html/plot-ternary-1.png" class="r-plt" alt="Ternary plot of MVPA, LPA and SB with the geometric mean marked, a plot of each observation's robust Mahalanobis distance against the cutoff, and the ternary plot again with the flagged observations highlighted." width="100%"><img src="composition-variable_files/figure-html/plot-ternary-2.png" class="r-plt" alt="Ternary plot of MVPA, LPA and SB with the geometric mean marked, a plot of each observation's robust Mahalanobis distance against the cutoff, and the ternary plot again with the flagged observations highlighted." width="100%"><img src="composition-variable_files/figure-html/plot-ternary-3.png" class="r-plt" alt="Ternary plot of MVPA, LPA and SB with the geometric mean marked, a plot of each observation's robust Mahalanobis distance against the cutoff, and the ternary plot again with the flagged observations highlighted." width="100%"></p>
-<p>In the first ternary plot, the crosshairs mark the geometric mean,
-and a point toward a vertex is a person who spends relatively more time
-in that behaviour. Outlyingness is measured against the covariance of
-the entire sample, so the outlier panels describe the sample as a whole
-and are never divided by group.</p>
-</div>
-</div>
+<div class="section level2">
+<h2 id="validation-and-closure-scales">Validation and closure scales<a class="anchor" aria-label="anchor" href="#validation-and-closure-scales"></a>
+</h2>
+<p>Before imputation or closure, <code><a href="../reference/check_composition.html">check_composition()</a></code> checks
+that all declared parts exist, are numeric, have no missing values, and
+contain no negative entries. You can also call
+<code><a href="../reference/check_composition.html">check_composition()</a></code> directly during data cleaning and pass
+<code>total</code> with a tolerance to catch incomplete accelerometer or
+diary days.</p>
+<p>Every downstream summary, plot, and reallocation shares the reporting
+scale fixed by <code>closure</code> on the <code>compD</code>
+object:</p>
+<table class="table">
+<colgroup>
+<col width="33%">
+<col width="33%">
+<col width="33%">
+</colgroup>
+<thead><tr class="header">
+<th><code>closure</code></th>
+<th>Reporting scale</th>
+<th>Typical use</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>1440</code></td>
+<td>Minutes per day</td>
+<td>24-hour time-use compositions</td>
+</tr>
+<tr class="even">
+<td>
+<code>1</code> (default)</td>
+<td>Proportions</td>
+<td>Unit simplex analysis</td>
+</tr>
+<tr class="odd">
+<td>
+<code>100</code> or <code>"percent"</code>
+</td>
+<td>Percentages</td>
+<td>Percentage-of-day reporting</td>
+</tr>
+<tr class="even">
+<td><code>"mean"</code></td>
+<td>Mean of observed row totals</td>
+<td>Varying-duration records (e.g., waking wear time)</td>
+</tr>
+</tbody>
+</table>
+<p>For compositions whose row totals vary meaningfully between people,
+declare <code>closure = "mean"</code> and include the total as a
+covariate with <code>include_total = TRUE</code> in
+<code><a href="../reference/comp_iv.html">comp_iv()</a></code> (see
+<code><a href="../articles/advanced-models.html">vignette("advanced-models", package = "timecoda")</a></code>).</p>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
@@ -950,24 +853,19 @@ methods, theoretical framework, and future directions.
 <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a>
 </h2>
 <ul>
-<li>
-<code><a href="../articles/timecoda.html">vignette("timecoda", package = "timecoda")</a></code>: getting
-started, with the whole workflow in one pass.</li>
-<li>
-<code><a href="../articles/composition-predictor.html">vignette("composition-predictor", package = "timecoda")</a></code>:
+<li><p><code><a href="../articles/timecoda.html">vignette("timecoda", package = "timecoda")</a></code>: getting
+started, with the whole workflow in one pass.</p></li>
+<li><p><code><a href="../articles/composition-predictor.html">vignette("composition-predictor", package = "timecoda")</a></code>:
 modelling an outcome from the composition with
-<code><a href="../reference/comp_iv.html">comp_iv()</a></code>.</li>
-<li>
-<code><a href="../articles/predicting-reallocations.html">vignette("predicting-reallocations", package = "timecoda")</a></code>:
-estimating the effect of moving time between parts.</li>
-<li>
-<code><a href="../articles/advanced-models.html">vignette("advanced-models", package = "timecoda")</a></code>: the
-other model engines, the formula interface, moderation and the total as
-a covariate.</li>
-<li>
-<code><a href="../articles/optimal-composition.html">vignette("optimal-composition", package = "timecoda")</a></code>:
+<code><a href="../reference/comp_iv.html">comp_iv()</a></code>.</p></li>
+<li><p><code><a href="../articles/predicting-reallocations.html">vignette("predicting-reallocations", package = "timecoda")</a></code>:
+estimating the effect of moving time between parts.</p></li>
+<li><p><code><a href="../articles/advanced-models.html">vignette("advanced-models", package = "timecoda")</a></code>:
+the other model engines, the formula interface, moderation, and the
+total as a covariate.</p></li>
+<li><p><code><a href="../articles/optimal-composition.html">vignette("optimal-composition", package = "timecoda")</a></code>:
 the search for the Goldilocks zone, the compositions with the best
-predicted outcome.</li>
+predicted outcome.</p></li>
 </ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

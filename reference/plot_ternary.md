@@ -46,8 +46,7 @@ plot_ternary(
 - conf_level:
 
   One or more confidence levels, each drawn as a
-  [`ggtern::geom_confidence_tern()`](https://rdrr.io/pkg/ggtern/man/geom_confidence_tern.html)
-  region; set `NULL` to omit them.
+  `geom_confidence_tern()` region; set `NULL` to omit them.
 
 - theme:
 

@@ -15,16 +15,16 @@
 ## Citation
 
 Source:
-[`inst/CITATION`](https://github.com/MarcusVVLopes/timecoda/blob/v0.6.0/inst/CITATION)
+[`inst/CITATION`](https://github.com/MarcusVVLopes/timecoda/blob/main/inst/CITATION)
 
 Lopes MVV, Tozetto WR, de Camargo R, Zhang K (2026). *timecoda:
 Compositional Data Analysis for Time-Use Behaviour Research*. R package
-version 0.6.0, <https://github.com/MarcusVVLopes/timecoda>.
+version 0.6.1, <https://github.com/MarcusVVLopes/timecoda>.
 
     @Manual{,
       title = {timecoda: Compositional Data Analysis for Time-Use Behaviour Research},
       author = {Marcus V. V. Lopes and Willen R. Tozetto and Ricardo {de Camargo} and Kai Zhang},
       year = {2026},
-      note = {R package version 0.6.0},
+      note = {R package version 0.6.1},
       url = {https://github.com/MarcusVVLopes/timecoda},
     }

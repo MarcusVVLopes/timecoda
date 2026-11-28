@@ -23,7 +23,7 @@ in a later release."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">timecoda</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.6.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.6.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -60,7 +60,7 @@ in a later release."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Search for the optimal composition (Goldilocks zone)</h1>
-      <small class="dont-index">Source: <a href="https://github.com/MarcusVVLopes/timecoda/blob/v0.6.0/R/optimal_composition.R" class="external-link"><code>R/optimal_composition.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/MarcusVVLopes/timecoda/blob/main/R/optimal_composition.R" class="external-link"><code>R/optimal_composition.R</code></a></small>
       <div class="d-none name"><code>optimal_composition.Rd</code></div>
     </div>
 
@@ -418,13 +418,14 @@ the outcome level named by <code>category</code> against the reference level, so
     <div class="section level2">
     <h2 id="functions">Functions<a class="anchor" aria-label="anchor" href="#functions"></a></h2>
 
-<ul><li><p><code>print(optimal_comp)</code>: Prints a text report of the search, zone by
-zone. Under the region it gives each part's limits (the box's, or the
-candidates' range for another region), per level of <code>by</code>, and the number
-of box limits cut to the observed range when there are any. For a level
-whose zones were widened, a line above its zones gives the share reached.
-For <code>type = "absolute"</code>, the report adds the predicted outcome at each
-zone centre.</p></li>
+<ul><li><p><code>print(optimal_comp)</code>: Prints a text report in sections. The report
+gives the search's settings, each part's region limits, each zone's centre
+and per-part range, and the gain from <code>from</code> to the zone centre. The limits
+are the box's, or the candidates' range for another region, and a mark
+shows a box limit that is the part's observed minimum or maximum. With
+<code>by</code>, the limits, zones and gain are given for each level. A widened search
+states how far its zones were widened, and <code>type = "absolute"</code> adds the
+predicted outcome at each zone centre.</p></li>
 <li><p><code>plot(optimal_comp)</code>: Ternary panels (<code>choose(D, 3)</code>) of one
 outcome's surface on the search's <code>type</code> scale (the effect versus <code>from</code>,
 or the predicted response), drawn for every engine. An ordinal fit's
@@ -498,20 +499,31 @@ for a directed reallocation between named parts.</p>
 <span class="r-in"><span><span class="co"># The per-part box of the mean +/- 3 standard deviations, on a 10-minute grid</span></span></span>
 <span class="r-in"><span><span class="va">opt</span> <span class="op">&lt;-</span> <span class="fu">optimal_composition</span><span class="op">(</span><span class="va">quad</span>, direction <span class="op">=</span> <span class="st">"min"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">opt</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;optimal_comp&gt; Goldilocks-zone search over MVPA, LPA, SB, SPT (total = 1440 min/day)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Region: per-part box of the mean +/- 3 SD; candidates on multiples of 10 min/day</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Limits: MVPA 0.1 to 180.0 min/day, LPA 51.8 to 503.3 min/day, SB 315.6 to 1013.4 min/day, SPT 239.9 to 809.4 min/day</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   4 of 8 box limits are the observed minimum or maximum of their part (lower: MVPA, LPA, SB, SPT)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Scale: Mean difference versus the reference day</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Zone rule: zbmi, the best 5% of predictions (lower is better)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   36,611 candidate compositions inside the region</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Zone for zbmi: 1831 compositions (centre [min; max], min/day)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     MVPA  125.2 [30.0; 170.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     LPA   267.2 [110.0; 480.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SB    353.9 [320.0; 410.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SPT   693.6 [470.0; 800.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Gain from the reference day to the zone centre (95% CI):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     zbmi: Mean difference -2.54 [-3.2; -1.88], p = 5.44e-13</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;optimal_comp&gt; Goldilocks-zone search: zbmi</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Search</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Parts       MVPA, LPA, SB, SPT (total = 1440 min/day)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Region      per-part box of the mean +/- 3 SD</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Grid        multiples of 10 min/day; 36,611 candidates</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Scale       Mean difference versus the reference day</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Zone rule   best 5% of predictions, lower is better</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Region limits (min/day)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>           lower     upper</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   MVPA      0.1*    180.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   LPA      51.8*    503.3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SB      315.6*   1013.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SPT     239.9*    809.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   * the part's observed minimum</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Zone for zbmi: 1,831 compositions (centre [min; max])</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   MVPA   125.2  [ 30.0; 170.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   LPA    267.2  [110.0; 480.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SB     353.9  [320.0; 410.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SPT    693.6  [470.0; 800.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Gain from the reference day to the zone centre (95% CI)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   zbmi   Mean difference   -2.54  [-3.2; -1.88]  p = 5.44e-13</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Two outcomes, their zones intersected</span></span></span>
 <span class="r-in"><span><span class="va">risk</span> <span class="op">&lt;-</span> <span class="fu"><a href="comp_iv.html">comp_iv</a></span><span class="op">(</span><span class="va">cd</span>, <span class="st">"obesity"</span>, model <span class="op">=</span> <span class="st">"glm"</span>, family <span class="op">=</span> <span class="st">"binomial"</span><span class="op">)</span></span></span>
@@ -521,89 +533,141 @@ for a directed reallocation between named parts.</p>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> The zone then marks where the region ends; see <span style="color: #00BB00;">on_boundary</span>.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> A curved surface can hold an interior optimum: refit with `curvature = TRUE`</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   (or `ilr()^2 + I(ilr()^2)` in a formula).</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;optimal_comp&gt; Goldilocks-zone search over MVPA, LPA, SB, SPT (total = 1440 min/day)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Region: per-part box of the mean +/- 3 SD; candidates on multiples of 10 min/day</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Limits: MVPA 0.1 to 180.0 min/day, LPA 51.8 to 503.3 min/day, SB 315.6 to 1013.4 min/day, SPT 239.9 to 809.4 min/day</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   4 of 8 box limits are the observed minimum or maximum of their part (lower: MVPA, LPA, SB, SPT)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Scale: Mean difference (zbmi), Odds ratio (obesity) versus the reference day</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Zone rule: zbmi, the best 5% of predictions (lower is better); obesity, the best 5% of predictions (lower is better)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   36,611 candidate compositions inside the region</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Zone for zbmi: 1831 compositions (centre [min; max], min/day)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     MVPA  125.2 [30.0; 170.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     LPA   267.2 [110.0; 480.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SB    353.9 [320.0; 410.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SPT   693.6 [470.0; 800.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Zone for obesity: 1831 compositions (centre [min; max], min/day)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     MVPA  151.2 [90.0; 170.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     LPA   262.2 [60.0; 500.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SB    367.9 [320.0; 450.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SPT   658.7 [400.0; 800.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     A fit linear in the composition has no interior optimum: the zone is the edge of the region in the direction of benefit.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Refit with `curvature = TRUE` for a surface that can hold one.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Overall zone: 1278 compositions (centre [min; max], min/day)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     MVPA  146.0 [90.0; 170.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     LPA   261.9 [110.0; 480.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SB    353.9 [320.0; 410.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SPT   678.2 [470.0; 800.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     A fit linear in the composition has no interior optimum: the zone is the edge of the region in the direction of benefit.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Refit with `curvature = TRUE` for a surface that can hold one.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Gain from the reference day to the zone centre (95% CI):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     zbmi: Mean difference -2.6 [-3.27; -1.93], p = 3.32e-13</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     obesity: Odds ratio 0.182 [0.079; 0.42], p = 6.45e-05</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;optimal_comp&gt; Goldilocks-zone search: zbmi, obesity</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Search</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Parts       MVPA, LPA, SB, SPT (total = 1440 min/day)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Region      per-part box of the mean +/- 3 SD</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Grid        multiples of 10 min/day; 36,611 candidates</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Scale       Mean difference (zbmi), Odds ratio (obesity), versus the reference</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>               day</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Zone rule   best 5% of predictions, lower is better</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Region limits (min/day)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>           lower     upper</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   MVPA      0.1*    180.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   LPA      51.8*    503.3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SB      315.6*   1013.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SPT     239.9*    809.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   * the part's observed minimum</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Zone for zbmi: 1,831 compositions (centre [min; max])</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   MVPA   125.2  [ 30.0; 170.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   LPA    267.2  [110.0; 480.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SB     353.9  [320.0; 410.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SPT    693.6  [470.0; 800.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Zone for obesity: 1,831 compositions (centre [min; max])</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   MVPA   151.2  [ 90.0; 170.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   LPA    262.2  [ 60.0; 500.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SB     367.9  [320.0; 450.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SPT    658.7  [400.0; 800.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   A fit linear in the composition has no interior optimum: the zone is the edge</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   of the region in the direction of benefit.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Refit with `curvature = TRUE` for a surface that can hold one.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Overall zone: 1,278 compositions (centre [min; max])</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   MVPA   146.0  [ 90.0; 170.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   LPA    261.9  [110.0; 480.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SB     353.9  [320.0; 410.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SPT    678.2  [470.0; 800.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   A fit linear in the composition has no interior optimum: the zone is the edge</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   of the region in the direction of benefit.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Refit with `curvature = TRUE` for a surface that can hold one.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Gain from the reference day to the zone centre (95% CI)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   zbmi      Mean difference    -2.6  [-3.27; -1.93]  p = 3.32e-13</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   obesity   Odds ratio        0.182  [0.079; 0.42]   p = 6.45e-05</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># The chi-square ellipsoid at the 80% level</span></span></span>
 <span class="r-in"><span><span class="fu">optimal_composition</span><span class="op">(</span><span class="va">quad</span>, direction <span class="op">=</span> <span class="st">"min"</span>, region <span class="op">=</span> <span class="st">"ellipsoid"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;optimal_comp&gt; Goldilocks-zone search over MVPA, LPA, SB, SPT (total = 1440 min/day)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Region: ILR ellipsoid at the 80% chi-square level, holding 82.7% of the sample; candidates on multiples of 10 min/day</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Candidates span: MVPA 10.0 to 300.0 min/day, LPA 100.0 to 500.0 min/day, SB 430.0 to 930.0 min/day, SPT 290.0 to 750.0 min/day</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Scale: Mean difference versus the reference day</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Zone rule: zbmi, the best 5% of predictions (lower is better)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   18,814 candidate compositions inside the region</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Zone for zbmi: 941 compositions (centre [min; max], min/day)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     MVPA  207.3 [90.0; 300.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     LPA   225.6 [160.0; 320.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SB    486.4 [430.0; 550.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SPT   520.7 [390.0; 680.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     63% of the zone lies near the edge of the region (its outer shell); the best composition may lie beyond it.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Gain from the reference day to the zone centre (95% CI):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     zbmi: Mean difference -1.89 [-2.27; -1.5], p = &lt;2e-16</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;optimal_comp&gt; Goldilocks-zone search: zbmi</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Search</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Parts       MVPA, LPA, SB, SPT (total = 1440 min/day)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Region      ILR ellipsoid at the 80% chi-square level, holding 82.7% of the</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>               sample</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Grid        multiples of 10 min/day; 18,814 candidates</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Scale       Mean difference versus the reference day</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Zone rule   best 5% of predictions, lower is better</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Candidate range (min/day)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          lower   upper</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   MVPA    10.0   300.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   LPA    100.0   500.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SB     430.0   930.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SPT    290.0   750.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Zone for zbmi: 941 compositions (centre [min; max])</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   MVPA   207.3  [ 90.0; 300.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   LPA    225.6  [160.0; 320.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SB     486.4  [430.0; 550.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SPT    520.7  [390.0; 680.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   63% of the zone lies near the edge of the region (its outer shell); the best</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   composition may lie beyond it.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Gain from the reference day to the zone centre (95% CI)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   zbmi   Mean difference   -1.89  [-2.27; -1.5]  p &lt; 2e-16</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># A box from the 1st to the 99th percentile of each part, on a 20-minute grid</span></span></span>
 <span class="r-in"><span><span class="fu">optimal_composition</span><span class="op">(</span><span class="va">quad</span>, direction <span class="op">=</span> <span class="st">"min"</span>, coverage <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.01</span>, <span class="fl">0.99</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                    spacing <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;optimal_comp&gt; Goldilocks-zone search over MVPA, LPA, SB, SPT (total = 1440 min/day)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Region: per-part box from the 1st to the 99th percentile; candidates on multiples of 20 min/day</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Limits: MVPA 1.2 to 199.0 min/day, LPA 68.0 to 422.0 min/day, SB 390.9 to 925.0 min/day, SPT 255.4 to 739.9 min/day</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Scale: Mean difference versus the reference day</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Zone rule: zbmi, the best 5% of predictions (lower is better)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   3,243 candidate compositions inside the region</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Zone for zbmi: 163 compositions (centre [min; max], min/day)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     MVPA  145.7 [60.0; 180.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     LPA   247.6 [120.0; 420.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SB    424.4 [400.0; 460.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SPT   622.3 [440.0; 720.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     63% of the zone lies near the edge of the region (its outer shell); the best composition may lie beyond it.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Gain from the reference day to the zone centre (95% CI):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     zbmi: Mean difference -2.08 [-2.53; -1.63], p = &lt;2e-16</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;optimal_comp&gt; Goldilocks-zone search: zbmi</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Search</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Parts       MVPA, LPA, SB, SPT (total = 1440 min/day)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Region      per-part box from the 1st to the 99th percentile</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Grid        multiples of 20 min/day; 3,243 candidates</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Scale       Mean difference versus the reference day</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Zone rule   best 5% of predictions, lower is better</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Region limits (min/day)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          lower   upper</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   MVPA     1.2   199.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   LPA     68.0   422.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SB     390.9   925.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SPT    255.4   739.9</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Zone for zbmi: 163 compositions (centre [min; max])</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   MVPA   145.7  [ 60.0; 180.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   LPA    247.6  [120.0; 420.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SB     424.4  [400.0; 460.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SPT    622.3  [440.0; 720.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   63% of the zone lies near the edge of the region (its outer shell); the best</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   composition may lie beyond it.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Gain from the reference day to the zone centre (95% CI)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   zbmi   Mean difference   -2.08  [-2.53; -1.63]  p &lt; 2e-16</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># A Cox fit, searched for the lowest hazard ratio versus the reference day</span></span></span>
 <span class="r-in"><span><span class="va">cox</span> <span class="op">&lt;-</span> <span class="fu"><a href="comp_iv.html">comp_iv</a></span><span class="op">(</span><span class="va">cd</span>, formula <span class="op">=</span> <span class="fu">survival</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="fu"><a href="ilr.html">ilr</a></span><span class="op">(</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>                 <span class="fu"><a href="https://rdrr.io/r/base/AsIs.html" class="external-link">I</a></span><span class="op">(</span><span class="fu"><a href="ilr.html">ilr</a></span><span class="op">(</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span> <span class="op">+</span> <span class="va">sex</span>, model <span class="op">=</span> <span class="st">"cox"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">optimal_composition</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>onset <span class="op">=</span> <span class="va">cox</span><span class="op">)</span>, direction <span class="op">=</span> <span class="st">"min"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;optimal_comp&gt; Goldilocks-zone search over MVPA, LPA, SB, SPT (total = 1440 min/day)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Region: per-part box of the mean +/- 3 SD; candidates on multiples of 10 min/day</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Limits: MVPA 0.1 to 180.0 min/day, LPA 51.8 to 503.3 min/day, SB 315.6 to 1013.4 min/day, SPT 239.9 to 809.4 min/day</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   4 of 8 box limits are the observed minimum or maximum of their part (lower: MVPA, LPA, SB, SPT)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Scale: Hazard ratio versus the reference day</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Zone rule: onset, the best 5% of predictions (lower is better)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   36,611 candidate compositions inside the region</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Zone for onset: 1831 compositions (centre [min; max], min/day)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     MVPA  151.4 [80.0; 170.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     LPA   339.9 [90.0; 500.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SB    375.7 [320.0; 570.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SPT   573.0 [240.0; 800.0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Gain from the reference day to the zone centre (95% CI):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     onset: Hazard ratio 0.205 [0.0876; 0.48], p = 0.000259</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;optimal_comp&gt; Goldilocks-zone search: onset</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Search</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Parts       MVPA, LPA, SB, SPT (total = 1440 min/day)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Region      per-part box of the mean +/- 3 SD</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Grid        multiples of 10 min/day; 36,611 candidates</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Scale       Hazard ratio versus the reference day</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Zone rule   best 5% of predictions, lower is better</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Region limits (min/day)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>           lower     upper</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   MVPA      0.1*    180.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   LPA      51.8*    503.3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SB      315.6*   1013.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SPT     239.9*    809.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   * the part's observed minimum</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Zone for onset: 1,831 compositions (centre [min; max])</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   MVPA   151.4  [ 80.0; 170.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   LPA    339.9  [ 90.0; 500.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SB     375.7  [320.0; 570.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SPT    573.0  [240.0; 800.0]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Gain from the reference day to the zone centre (95% CI)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   onset   Hazard ratio   0.205  [0.0876; 0.48]  p = 0.000259</span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

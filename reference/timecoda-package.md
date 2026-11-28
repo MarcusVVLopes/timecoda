@@ -33,10 +33,9 @@ Authors:
 - Marcus V. V. Lopes <mveber@cheo.on.ca>
   ([ORCID](https://orcid.org/0000-0002-7968-5211)) \[copyright holder\]
 
-Other contributors:
+- Willen R. Tozetto <WTozetto@cheo.on.ca>
+  ([ORCID](https://orcid.org/0000-0001-8856-1678))
 
-- Willen R. Tozetto <WTozetto@cheo.on.ca> \[contributor\]
+- Ricardo de Camargo <ricardo.de.camargo@hotmail.com>
 
-- Ricardo de Camargo <ricardo.de.camargo@hotmail.com> \[contributor\]
-
-- Kai Zhang <KZhang@cheo.on.ca> \[contributor\]
+- Kai Zhang <KZhang@cheo.on.ca>

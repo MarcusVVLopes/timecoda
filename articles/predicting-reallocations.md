@@ -1,27 +1,22 @@
 # Predicting time reallocations
 
+Pivot ILR slopes from
+[`comp_iv()`](https://marcusvvlopes.github.io/timecoda/reference/comp_iv.md)
+are hard to interpret directly in minutes. Compositional isotemporal
+substitution solves this by comparing two whole days: a reference
+composition and the same day with `delta` minutes shifted from one
+behaviour to another while holding the remaining behaviours fixed
+(Dumuid, Stanford, Pedišić, et al., 2018; Dumuid et al., 2019; Dumuid et
+al., 2020). Because these estimates come from observational regression
+models, they compare expected outcomes across different compositions
+rather than causal within-person changes.
+
+We start by fitting a linear model for `zbmi` and a logistic model for
+`obesity` on `timeuse`:
+
 ``` r
 
 library(timecoda)
-```
-
-## Reallocating time
-
-[`predict_realloc()`](https://marcusvvlopes.github.io/timecoda/reference/predict_realloc.md)
-takes a model fitted by
-[`comp_iv()`](https://marcusvvlopes.github.io/timecoda/reference/comp_iv.md)
-and estimates the difference in an outcome associated with moving a
-stated number of minutes from one part of a composition to another.
-
-The examples use the bundled `timeuse` data, with the composition
-declared once as `cd`. For a description of these data, see
-[`vignette("composition-variable", package = "timecoda")`](https://marcusvvlopes.github.io/timecoda/articles/composition-variable.md).
-Two models are fitted to it. For fitting these models, see
-[`vignette("composition-predictor", package = "timecoda")`](https://marcusvvlopes.github.io/timecoda/articles/composition-predictor.md).
-`fit_bmi` is a linear model of the body-mass-index z-score (`zbmi`), and
-`fit_ob` is a logistic regression of an obesity indicator (`obesity`).
-
-``` r
 
 cd <- declare_composition(
   data    = timeuse,
@@ -40,38 +35,41 @@ fit_ob  <- comp_iv(comp = cd, outcome = "obesity", model = "glm",
                    family = "binomial")
 ```
 
-## Part 1. What a reallocation estimate is
+## Pairwise reallocations
 
-### Two days compared
+To estimate how obesity odds differ when 10, 20, or 30 minutes move from
+sedentary behaviour (`from = "SB"`) to moderate-to-vigorous activity
+(`to = "MVPA"`), pass the fit to
+[`predict_realloc()`](https://marcusvvlopes.github.io/timecoda/reference/predict_realloc.md):
 
-A reallocation estimate compares two whole days. One is the reference
-composition, a typical day for the sample, and the other is the same day
-with `delta` minutes moved from one part, the donor, to another, the
-receiver, while the remaining parts keep their reference values. The
-estimate is the difference between the outcomes the model predicts for
-the two days (Dumuid, Stanford, Pedišić, et al., 2018; Dumuid et al.,
-2020). This approach is the compositional isotemporal substitution model
-of Dumuid et al. (2019).
+``` r
 
-The difference is taken on the link scale of the model. For a linear
-model, which has the identity link, it is a mean difference in the
-outcome itself, here in z-BMI units. For a logistic regression, which
-has the logit link, it is a difference in log-odds, and exponentiating
-it gives an odds ratio, that is, the odds of the outcome on the
-reallocated day divided by the odds on the reference day.
+r <- predict_realloc(
+  object = fit_ob,
+  from   = "SB",
+  to     = "MVPA",
+  delta  = c(10, 20, 30)
+)
+summary(object = r)
+#> Time-reallocation effects: Odds ratio versus the reference composition
+#>   3 reallocations of 10, 20, 30; 95% confidence intervals
+#> 
+#> # A tibble: 3 × 9
+#>   to    from  to_label      from_label delta estimate conf.low conf.high p.value
+#>   <chr> <chr> <chr>         <chr>      <dbl>    <dbl>    <dbl>     <dbl>   <dbl>
+#> 1 MVPA  SB    Moderate-to-… Sedentary…    10    0.822    0.764     0.884 1.51e-7
+#> 2 MVPA  SB    Moderate-to-… Sedentary…    20    0.704    0.618     0.802 1.36e-7
+#> 3 MVPA  SB    Moderate-to-… Sedentary…    30    0.620    0.519     0.740 1.25e-7
+```
 
-The estimates are associations in observational data. Each compares the
-outcome predicted for two different compositions across the sample, and
-none measures the change that would follow if a person altered their own
-day (Dumuid, Stanford, Pedišić, et al., 2018).
+Moving 10 minutes from `SB` to `MVPA` is associated with roughly 18%
+lower odds of obesity (OR = 0.822) relative to the reference day, and
+each additional 10 minutes brings a smaller multiplicative drop because
+the model operates on log-ratios. Note that per-row p-values are
+unadjusted for multiple testing.
 
-### The reference composition
-
-The reference composition is the closed geometric mean of the sample,
-and every estimate in this vignette is anchored at it (Dumuid, Stanford,
-Pedišić, et al., 2018; Dumuid et al., 2020) except those in the section
-on a chosen reference day. To see the reference composition, print the
-fit.
+By default, every reallocation is anchored at the sample’s closed
+geometric mean, which is printed with the fit:
 
 ``` r
 
@@ -93,17 +91,13 @@ print(x = fit_ob)
 #> Residual Deviance: 322   AIC: 330
 ```
 
-Because both fits share the declared composition, `fit_bmi` has the same
-reference composition. The reference day holds only 28.1 minutes of
-moderate-to-vigorous activity, so a transfer of 28.1 minutes or more out
-of that part leaves it at zero or below (see the section on invalid
-transfers in Part 2).
-
-### What `predict_realloc()` does
-
-A call to
+Here, the reference day contains only 28.1 minutes of `MVPA`, which sets
+an upper bound on how many minutes can be taken out of `MVPA`. Behind
+the scenes,
 [`predict_realloc()`](https://marcusvvlopes.github.io/timecoda/reference/predict_realloc.md)
-runs six steps.
+builds each reallocated day, transforms both compositions into the fit’s
+ILR basis on an `emmeans` reference grid, and contrasts them on the link
+scale before back-transforming:
 
 ![Flowchart of the predict_realloc() pipeline: take the reference
 composition stored in the fit, build each reallocated composition by
@@ -116,50 +110,11 @@ response at each composition, back-transform to the model's effect
 measure, and return a realloc tibble read by summary(), pub_ready() and
 plot_realloc().](realloc-pipeline.svg)
 
-### A complete call
+## Asymmetry, reversals, and invalid transfers
 
-``` r
-
-r <- predict_realloc(
-  object = fit_ob,
-  from   = "SB",
-  to     = "MVPA",
-  delta  = c(10, 20, 30)
-)
-```
-
-### Reading the summary
-
-``` r
-
-summary(object = r)
-#> Time-reallocation effects: Odds ratio versus the reference composition
-#>   3 reallocations of 10, 20, 30; 95% confidence intervals
-#> 
-#> # A tibble: 3 × 9
-#>   to    from  to_label      from_label delta estimate conf.low conf.high p.value
-#>   <chr> <chr> <chr>         <chr>      <dbl>    <dbl>    <dbl>     <dbl>   <dbl>
-#> 1 MVPA  SB    Moderate-to-… Sedentary…    10    0.822    0.764     0.884 1.51e-7
-#> 2 MVPA  SB    Moderate-to-… Sedentary…    20    0.704    0.618     0.802 1.36e-7
-#> 3 MVPA  SB    Moderate-to-… Sedentary…    30    0.620    0.519     0.740 1.25e-7
-```
-
-Each `p.value` comes from a test of the null hypothesis that the odds
-ratio in its row equals 1, that is, that the odds of obesity do not
-differ between the reallocated day and the reference day. The p-values
-are not adjusted for the number of rows.
-
-We read an odds ratio of 0.822 for 10 minutes as odds of obesity about
-18% lower on the reallocated day than on the reference day. Each further
-10 minutes multiplies the odds ratio by a factor closer to 1, because
-the model works on log-ratios.
-
-## Part 2. The arguments in turn
-
-### Direction and size
-
-To reverse the transfer, swap `from` and `to`, here moving time from
-moderate-to-vigorous activity to sedentary behaviour.
+Reversing the transfer—moving time out of `MVPA` into `SB`—shows the
+classic asymmetry of compositional substitution (Dumuid, Stanford,
+Pedišić, et al., 2018; Dumuid et al., 2020):
 
 ``` r
 
@@ -173,23 +128,39 @@ predict_realloc(object = fit_ob, from = "MVPA", to = "SB", delta = c(10, 20, 30)
 #> # ℹ 1 more variable: p.value <dbl>
 ```
 
-The reversed estimate is not the reciprocal of the original. Moving 10
-minutes into moderate-to-vigorous activity gave an odds ratio of 0.822,
-whose reciprocal is about 1.22, whereas moving 10 minutes out of it
-gives 1.32, because removing 10 of 28.1 minutes is a larger relative
-change than adding 10 to them. Dumuid et al. (2020) note that estimated
-differences need not be symmetric when the same duration is added to or
-taken from a part, and Dumuid, Stanford, Pedišić, et al. (2018) report
-such asymmetry for adiposity.
+Moving 10 minutes out of `MVPA` gives an odds ratio of 1.32—larger than
+the reciprocal of 0.822 (\approx 1.22)—because subtracting 10 minutes
+from 28.1 is a much larger relative change than adding 10. (Passing
+negative values to `delta` with the original `from` and `to` produces
+the same reversed estimates.)
 
-You can also reverse the transfer with a negative `delta`. The estimates
-for the original `from` and `to` with negative magnitudes are those of
-the swapped call.
+In that table, the 30-minute row returns `NA` because subtracting 30
+minutes from 28.1 drives `MVPA` below zero. By default
+(`on_invalid = "na"`), invalid transfers stay in the output as missing
+rows so multi-step sweeps do not fail midway. You can drop them instead
+with `on_invalid = "omit"`, or halt immediately with
+`on_invalid = "error"`:
 
-### All pairs at once
+``` r
 
-To use every ordered pair of parts, omit `from` and `to`. This gives
-`D (D - 1)` reallocations for a composition of `D` parts.
+predict_realloc(object = fit_ob, from = "MVPA", to = "SB", delta = c(15, 60),
+                on_invalid = "omit")
+#> # A tibble: 1 × 10
+#>   from  to    delta estimate std.error    df conf.low conf.high statistic
+#>   <chr> <chr> <dbl>    <dbl>     <dbl> <dbl>    <dbl>     <dbl>     <dbl>
+#> 1 MVPA  SB       15     1.61     0.149   Inf     1.35      1.93      5.18
+#> # ℹ 1 more variable: p.value <dbl>
+```
+
+Transfers that leave a part strictly positive but very close to zero
+pass this check, though predicted outcomes grow rapidly near the simplex
+boundary (Dumuid et al., 2020).
+
+## Reallocation schemes
+
+When you omit both `from` and `to`,
+[`predict_realloc()`](https://marcusvvlopes.github.io/timecoda/reference/predict_realloc.md)
+evaluates all D(D - 1) ordered pairs at once:
 
 ``` r
 
@@ -212,15 +183,12 @@ predict_realloc(object = fit_ob, delta = 15)
 #> # ℹ 1 more variable: p.value <dbl>
 ```
 
-The odds ratios farthest from 1 are in the six transfers that involve
-moderate-to-vigorous activity.
+In these data, the six transfers involving `MVPA` produce the largest
+shifts in odds ratios.
 
-### One part against all the others
-
-To move minutes between one focal part and all the others, set
-`scheme = "one-to-all"`. The minutes are shared among the other parts in
-proportion to their reference values, so that those parts keep their
-ratios to one another.
+To move time between one focal behaviour and all remaining behaviours in
+proportion to their reference values—preserving the ratios among the
+remaining parts—use `scheme = "one-to-all"`:
 
 ``` r
 
@@ -238,19 +206,13 @@ summary(object = r_rest)
 #> 3 MVPA  (rest) Moderate-to… All other…    30    0.639    0.536     0.761 4.89e-7
 ```
 
-The odds ratio for 10 minutes is close to the 0.822 obtained when all 10
-minutes come from sedentary behaviour.
+To reverse the direction so the focal behaviour gives time to the rest,
+swap `to` for `from = "MVPA"`; omitting both cycles through every
+behaviour as the focal receiver.
 
-To make the focal part give minutes to the others, use `from = "MVPA"`
-in place of `to`. If neither is given, every part in turn is the focal
-part receiving minutes.
-
-### Custom reallocations
-
-To reallocate time among three or more parts at once, give `realloc` a
-named vector of the minutes each part gains or loses. The changes must
-sum to zero, and parts left out keep their reference values. `realloc`
-cannot be combined with `from`, `to` or `scheme`.
+For scenarios that shift time across three or more behaviours
+simultaneously, supply a named zero-sum vector (or list of vectors) to
+`realloc` instead of `from`, `to`, or `scheme`:
 
 ``` r
 
@@ -266,48 +228,12 @@ summary(object = r_custom)
 #> 1 SPT +30 LPA -15… Sleep +… Light PA …    30    0.961    0.892      1.04   0.302
 ```
 
-The scenario is named in the row by its signed changes, `SPT +30` under
-`to` and `LPA -15, SB -15` under `from`, and `delta` is the 30 minutes
-moved in total. To estimate several scenarios in one call, give a list
-of such vectors. Each scenario gets one row.
+## Relative contrasts vs. absolute predictions
 
-### Invalid transfers
-
-A transfer larger than the donor’s reference minutes drives that part to
-zero or below. To choose how such an invalid transfer is handled, set
-`on_invalid`. Its default, `"na"`, keeps the transfer without an
-estimate, and `"omit"` and `"error"` are the alternatives.
-
-With `"error"`, the call halts at the first invalid transfer and returns
-no result.
-
-With `"omit"`, the invalid transfer is dropped and the valid one
-returned.
-
-``` r
-
-predict_realloc(object = fit_ob, from = "MVPA", to = "SB", delta = c(15, 60),
-                on_invalid = "omit")
-#> # A tibble: 1 × 10
-#>   from  to    delta estimate std.error    df conf.low conf.high statistic
-#>   <chr> <chr> <dbl>    <dbl>     <dbl> <dbl>    <dbl>     <dbl>     <dbl>
-#> 1 MVPA  SB       15     1.61     0.149   Inf     1.35      1.93      5.18
-#> # ℹ 1 more variable: p.value <dbl>
-```
-
-For a sweep over several magnitudes or pairs, use the default or
-`"omit"`. A single invalid transfer then does not halt the whole call.
-
-A transfer that leaves a part close to zero passes the check, although
-the reallocated composition then lies near the edge of the simplex,
-where predicted outcomes tend towards infinity as a part approaches zero
-(Dumuid et al., 2020).
-
-### Relative and absolute output
-
-To choose what each row reports, set `type`. With `type = "absolute"`,
-each row is instead the model’s prediction at that day, on the scale of
-the outcome.
+By default (`type = "relative"`),
+[`predict_realloc()`](https://marcusvvlopes.github.io/timecoda/reference/predict_realloc.md)
+returns the contrast between the reallocated day and the reference day—a
+mean difference for linear models and an odds ratio for logistic models:
 
 ``` r
 
@@ -321,8 +247,9 @@ predict_realloc(object = fit_bmi, from = "SB", to = "MVPA", delta = c(10, 20, 30
 #> # ℹ 1 more variable: p.value <dbl>
 ```
 
-Moving 10 minutes from sedentary behaviour to moderate-to-vigorous
-activity is associated with a z-BMI 0.209 units lower.
+Moving 10 minutes from `SB` to `MVPA` is associated with a 0.209-unit
+lower mean `zbmi`. To inspect predicted outcomes at each composition
+directly, switch to `type = "absolute"`:
 
 ``` r
 
@@ -337,10 +264,11 @@ predict_realloc(object = fit_bmi, from = "SB", to = "MVPA",
 #> 4 SB    MVPA     30  -0.536     0.0615   296   -0.657   -0.415
 ```
 
-The first row is the reference day, which has no donor or receiver and a
-`delta` of 0. Subtracting the reference row from a reallocated row gives
-the mean difference of the relative output. For the logistic regression,
-the absolute output is the predicted probability of obesity.
+The `delta = 0` row gives the predicted outcome at the reference day;
+subtracting it from any subsequent row recovers the relative mean
+difference. On the logistic model, `type = "absolute"` returns predicted
+obesity probabilities whose odds ratios match the relative estimates
+above:
 
 ``` r
 
@@ -355,15 +283,79 @@ predict_realloc(object = fit_ob, from = "SB", to = "MVPA",
 #> 4 SB    MVPA     30    0.177    0.0271   Inf    0.130     0.237
 ```
 
-The odds ratios of the complete call are ratios of the odds at these
-probabilities.
+## Visualizing reallocation curves
 
-### A chosen reference day
+To plot pairwise reallocations as continuous curves across all behaviour
+pairs, use
+[`plot_realloc()`](https://marcusvvlopes.github.io/timecoda/reference/plot_realloc.md).
+Each panel in the lower-triangular grid sweeps one pair in both
+directions up to `delta_max` minutes (the colour of each side of a curve
+marks the behaviour gaining time). Here we use `n_points = 20` for
+speed; the default of 41 draws smoother curves:
 
-To anchor the comparison at a chosen day instead (e.g., a guideline
-schedule or a policy target), give the `reference` argument one positive
-value for each part. The values must sum to the total of the
-composition, 1440 minutes here.
+``` r
+
+p <- plot_realloc(object = fit_ob, delta_max = 60, n_points = 20)
+```
+
+![Lower-triangular grid of six panels, one per pair of parts, each
+showing the odds ratio of obesity against the minutes reallocated
+between the two parts in either direction, with a confidence ribbon, a
+dashed line at 1, and colour marking the part gaining
+time.](predicting-reallocations_files/figure-html/plot-1.png)
+
+In the `MVPA` panels, the curves stop at 24 minutes on the side where
+`MVPA` loses time—the largest evaluated step that keeps `MVPA` positive
+from its 28.1-minute reference—and rise more steeply than they fall on
+the opposite side.
+
+The returned object stores both the assembled `figure` and individual
+`panels`, so you can pull out a single comparison on its own:
+
+``` r
+
+p$panels[["MVPA.SB"]]
+```
+
+![A single reallocation panel for obesity: the odds ratio against the
+minutes reallocated between sedentary behaviour and moderate-to-vigorous
+activity, with a confidence ribbon and a dashed line at
+1.](predicting-reallocations_files/figure-html/plot-panel-1.png)
+
+To omit a behaviour’s panels from the grid without removing it from the
+underlying composition, pass its name to `exclude` (with
+`scheme = "one-to-all"`, excluded parts still participate in the
+reallocation):
+
+``` r
+
+plot_realloc(object = fit_ob, delta_max = 60, n_points = 20, exclude = "MVPA")
+```
+
+![Reallocation figure for obesity without the moderate-to-vigorous
+activity panels: three panels showing the odds ratio against the minutes
+reallocated between light activity, sedentary behaviour and sleep, with
+confidence ribbons and a dashed line at
+1.](predicting-reallocations_files/figure-html/plot-exclude-1.png)
+
+For a linear model like `fit_bmi`, the vertical axis switches
+automatically to mean differences with a dashed reference line at 0:
+
+``` r
+
+plot_realloc(object = fit_bmi, delta_max = 60, n_points = 20)
+```
+
+![Reallocation figure for the linear model: six panels showing the mean
+difference in z-BMI against the minutes reallocated between each pair of
+parts, with a confidence ribbon and a dashed reference line at
+0.](predicting-reallocations_files/figure-html/plot-bmi-1.png)
+
+## Custom reference days and subgroup moderation
+
+To anchor reallocations at a specific policy or guideline day rather
+than the sample geometric mean, pass a positive vector summing to the
+composition total to `reference`:
 
 ``` r
 
@@ -379,29 +371,26 @@ predict_realloc(object = fit_ob, from = "SB", to = "MVPA",
 #> # ℹ 1 more variable: p.value <dbl>
 ```
 
-The odds ratio for 10 minutes is now 0.830, against 0.822 at the closed
-geometric mean. Because the same transfer is a different relative change
-on a different day, the estimate depends on the day it starts from.
-Dumuid, Stanford, Pedišić, et al. (2018) show such differences between
-reference compositions for boys and girls.
+Starting from 30 minutes of `MVPA` instead of 28.1 shifts the 10-minute
+odds ratio slightly from 0.822 to 0.830, because the same transfer
+represents a smaller relative increase (Dumuid, Stanford, Pedišić, et
+al., 2018).
 
-### Covariates
-
-Neither fit so far includes covariates. When a model adjusts for
-covariates without composition-by-covariate interactions, the covariates
-cancel in the contrast, so a relative estimate is the same at every
-covariate value, and an absolute prediction is made with the covariates
-averaged over, as in the emmeans grid step. When the model includes an
-interaction between the composition and a covariate, the contrast
-differs between values of that covariate, and the call ends with an
-error unless you fix those values through `at` or split them through
-`by`. `at` takes a list of covariate values such as
-`at = list(sex = "female")`. For this case, see the help page
-[`?predict_realloc`](https://marcusvvlopes.github.io/timecoda/reference/predict_realloc.md).
-
-In `fit_sex`, sex is added as a `moderator` of the composition, and the
-reallocation is estimated once per sex. For moderators, see
-[`vignette("advanced-models", package = "timecoda")`](https://marcusvvlopes.github.io/timecoda/articles/advanced-models.md).
+Because all predictions for linear and full quadratic models are
+invariant to the choice of ILR basis (only non-invariant specifications
+like squares-only `I(ilr()^2)` or
+[`poly()`](https://rdrr.io/r/stats/poly.html) depend on part order; see
+[`?ilr`](https://marcusvvlopes.github.io/timecoda/reference/ilr.md)),
+[`predict_realloc()`](https://marcusvvlopes.github.io/timecoda/reference/predict_realloc.md)
+evaluates every contrast in the single basis stored in the fit. When a
+model includes main-effect covariates only, they cancel out of relative
+contrasts and are averaged over on the `emmeans` grid for absolute
+predictions. When the composition interacts with a covariate—for example
+via `moderator = "sex"` (see
+[`vignette("advanced-models", package = "timecoda")`](https://marcusvvlopes.github.io/timecoda/articles/advanced-models.md))—estimates
+depend on the covariate value, so you either split by subgroup with `by`
+or pin a value with `at` (e.g., `at = list(sex = "female")`). For a
+factor `moderator`, `by` defaults to that moderator automatically:
 
 ``` r
 
@@ -426,14 +415,10 @@ summary(object = r_sex)
 #> # ℹ 1 more variable: p.value <dbl>
 ```
 
-On a fit with a factor `moderator`, `by` defaults to the moderator, so
-the same rows are returned without naming it.
+To compare curves visually across sexes,
 [`plot_realloc()`](https://marcusvvlopes.github.io/timecoda/reference/plot_realloc.md)
-passes `by` to
-[`predict_realloc()`](https://marcusvvlopes.github.io/timecoda/reference/predict_realloc.md)
-and stacks one panel grid per level, and the grids share the legend and
-the vertical axis, so that you can compare a curve between the sexes
-panel by panel.
+also accepts `by` and stacks one panel grid per level on a shared
+vertical axis:
 
 ``` r
 
@@ -448,29 +433,11 @@ confidence ribbon and a dashed line at 1, on one vertical axis shared by
 both
 grids.](predicting-reallocations_files/figure-html/covariates-plot-1.png)
 
-### The ILR basis
+## Publication tables
 
-A different ILR basis rotates the coordinates and the coefficients
-together, and for a model linear in the coordinates, like the two fits
-here, or one holding their full quadratic, every prediction is
-unchanged.
-[`predict_realloc()`](https://marcusvvlopes.github.io/timecoda/reference/predict_realloc.md)
-evaluates every contrast in the single basis stored in the fit. A
-squares-only or [`poly()`](https://rdrr.io/r/stats/poly.html) term
-changes with the order of the parts (see
-[`?ilr`](https://marcusvvlopes.github.io/timecoda/reference/ilr.md)).
-
-## Part 3. Publication output
-
-### Publication table
-
-The table returned by [`summary()`](https://rdrr.io/r/base/summary.html)
-keeps full numeric precision. To build the publication table from it,
-use
-[`pub_ready()`](https://marcusvvlopes.github.io/timecoda/reference/pub_ready.md),
-which uses the `gt` package. `gt` is a suggested package, and
-[`pub_ready()`](https://marcusvvlopes.github.io/timecoda/reference/pub_ready.md)
-is the only function that requires it.
+To build a formatted `gt` table across all pairs and magnitudes, pass
+the reallocation summary to
+[`pub_ready()`](https://marcusvvlopes.github.io/timecoda/reference/pub_ready.md):
 
 ``` r
 
@@ -484,18 +451,9 @@ pub_ready(x = summary(object = r_all), digits = 2)$effects
 
 [TABLE]
 
-[`pub_ready()`](https://marcusvvlopes.github.io/timecoda/reference/pub_ready.md)
-returns a list of tables, and at the console the bare call
-`pub_ready(x = summary(object = r_all), digits = 2)` displays every
-table in the list.
-
-The dashes in the 30-minute group are the three invalid transfers out of
-moderate-to-vigorous activity, which the default `on_invalid = "na"`
-keeps as missing estimates.
-
-To change the threshold for the asterisk, set `p_flag` in
-[`pub_ready()`](https://marcusvvlopes.github.io/timecoda/reference/pub_ready.md),
-here to `1e-6`. Only the asterisks differ from those of the first table.
+Dashes in the 30-minute column mark the three invalid transfers out of
+`MVPA`. By default, estimates with p \< 0.05 are flagged with an
+asterisk; you can tighten that threshold with `p_flag`:
 
 ``` r
 
@@ -503,102 +461,6 @@ pub_ready(x = summary(object = r_all), digits = 2, p_flag = 1e-6)$effects
 ```
 
 [TABLE]
-
-### Transfer figure
-
-[`plot_realloc()`](https://marcusvvlopes.github.io/timecoda/reference/plot_realloc.md)
-draws the estimates as continuous curves. It sweeps each pair of parts
-in both directions up to `delta_max` minutes and evaluates each curve at
-`n_points` magnitudes across the two directions. Twenty is used here to
-keep this example quick, and the default of 41 draws smoother curves.
-
-Each of the six panels in the lower triangle of the grid holds one
-unordered pair of parts. The minutes moved between the two parts are
-plotted as a positive magnitude on both sides of zero, with time moving
-to the part named first in the panel’s title to the right of zero and to
-the second part to the left of zero. The vertical axis shows the odds
-ratio on a logarithmic scale shared by every panel, and a dashed line
-marks 1 for no difference. The shaded ribbon is the 95% confidence
-interval.
-
-``` r
-
-plot_realloc(object = fit_ob, delta_max = 60, n_points = 20)
-```
-
-![Lower-triangular grid of six panels, one per pair of parts, each
-showing the odds ratio of obesity against the minutes reallocated
-between the two parts in either direction, with a confidence ribbon, a
-dashed line at 1, and colour marking the part gaining
-time.](predicting-reallocations_files/figure-html/plot-1.png)
-
-In the panels with moderate-to-vigorous activity, the half in which that
-part gives time climbs more steeply than the other half falls, which is
-the asymmetry found when the transfer was reversed. That half stops at
-24 minutes, the largest evaluated magnitude that leaves the part
-positive at its reference value of 28.1 minutes.
-
-[`plot_realloc()`](https://marcusvvlopes.github.io/timecoda/reference/plot_realloc.md)
-also returns the panels, so you can draw one of them on its own or
-assemble it with others. The returned list holds `panels`, named by the
-parts of each panel, and `figure`, the assembled figure.
-
-``` r
-
-p <- plot_realloc(object = fit_ob, delta_max = 60, n_points = 20)
-```
-
-![A single reallocation panel for obesity: the odds ratio against the
-minutes reallocated between sedentary behaviour and moderate-to-vigorous
-activity, with a confidence ribbon and a dashed line at
-1.](predicting-reallocations_files/figure-html/plot-panel-1.png)
-
-``` r
-
-p$panels[["MVPA.SB"]]
-```
-
-![A single reallocation panel for obesity: the odds ratio against the
-minutes reallocated between sedentary behaviour and moderate-to-vigorous
-activity, with a confidence ribbon and a dashed line at
-1.](predicting-reallocations_files/figure-html/plot-panel-2.png)
-
-To hide the panels of a part, name it in `exclude`.
-
-``` r
-
-plot_realloc(object = fit_ob, delta_max = 60, n_points = 20, exclude = "MVPA")
-```
-
-![Reallocation figure for obesity without the moderate-to-vigorous
-activity panels: three panels showing the odds ratio against the minutes
-reallocated between light activity, sedentary behaviour and sleep, with
-confidence ribbons and a dashed line at
-1.](predicting-reallocations_files/figure-html/plot-exclude-1.png)
-
-The excluded part stays in the composition, so the filter changes only
-the display. With `scheme = "one-to-all"`,
-[`plot_realloc()`](https://marcusvvlopes.github.io/timecoda/reference/plot_realloc.md)
-draws one panel per part, each showing that part against all the others,
-and an excluded part still takes its share of each reallocation.
-
-For the linear model, the vertical axis shows the mean difference in
-z-BMI on an ordinary scale, and the dashed reference line is drawn at 0.
-
-``` r
-
-plot_realloc(object = fit_bmi, delta_max = 60, n_points = 20)
-```
-
-![Reallocation figure for the linear model: six panels showing the mean
-difference in z-BMI against the minutes reallocated between each pair of
-parts, with a confidence ribbon and a dashed reference line at
-0.](predicting-reallocations_files/figure-html/plot-bmi-1.png)
-
-For z-BMI, the ribbons of the transfers between sedentary behaviour and
-either light activity or sleep lie wholly above or below the dashed line
-at reallocations away from zero, whereas the ribbons of the transfers
-between light activity and sleep include it.
 
 ## References
 
@@ -625,6 +487,8 @@ Public Health*, 18, 311.
 
 - [`vignette("composition-predictor", package = "timecoda")`](https://marcusvvlopes.github.io/timecoda/articles/composition-predictor.md):
   fitting the models whose reallocations this vignette estimates.
+- [`vignette("optimal-composition", package = "timecoda")`](https://marcusvvlopes.github.io/timecoda/articles/optimal-composition.md):
+  searching a fitted model for the Goldilocks zone.
 - [`vignette("timecoda", package = "timecoda")`](https://marcusvvlopes.github.io/timecoda/articles/timecoda.md):
   the complete workflow, from declaring a composition to the
   reallocation figure.

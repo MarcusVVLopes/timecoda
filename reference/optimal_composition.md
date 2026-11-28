@@ -397,13 +397,15 @@ outcome level named by `category` against the reference level, so each
 
 ## Functions
 
-- `print(optimal_comp)`: Prints a text report of the search, zone by
-  zone. Under the region it gives each part's limits (the box's, or the
-  candidates' range for another region), per level of `by`, and the
-  number of box limits cut to the observed range when there are any. For
-  a level whose zones were widened, a line above its zones gives the
-  share reached. For `type = "absolute"`, the report adds the predicted
-  outcome at each zone centre.
+- `print(optimal_comp)`: Prints a text report in sections. The report
+  gives the search's settings, each part's region limits, each zone's
+  centre and per-part range, and the gain from `from` to the zone
+  centre. The limits are the box's, or the candidates' range for another
+  region, and a mark shows a box limit that is the part's observed
+  minimum or maximum. With `by`, the limits, zones and gain are given
+  for each level. A widened search states how far its zones were
+  widened, and `type = "absolute"` adds the predicted outcome at each
+  zone centre.
 
 - `plot(optimal_comp)`: Ternary panels (`choose(D, 3)`) of one outcome's
   surface on the search's `type` scale (the effect versus `from`, or the
@@ -494,20 +496,31 @@ quad <- comp_iv(cd, formula = zbmi ~ ilr()^2 + I(ilr()^2) + sex,
 # The per-part box of the mean +/- 3 standard deviations, on a 10-minute grid
 opt <- optimal_composition(quad, direction = "min")
 opt
-#> <optimal_comp> Goldilocks-zone search over MVPA, LPA, SB, SPT (total = 1440 min/day)
-#>   Region: per-part box of the mean +/- 3 SD; candidates on multiples of 10 min/day
-#>   Limits: MVPA 0.1 to 180.0 min/day, LPA 51.8 to 503.3 min/day, SB 315.6 to 1013.4 min/day, SPT 239.9 to 809.4 min/day
-#>   4 of 8 box limits are the observed minimum or maximum of their part (lower: MVPA, LPA, SB, SPT)
-#>   Scale: Mean difference versus the reference day
-#>   Zone rule: zbmi, the best 5% of predictions (lower is better)
-#>   36,611 candidate compositions inside the region
-#>   Zone for zbmi: 1831 compositions (centre [min; max], min/day)
-#>     MVPA  125.2 [30.0; 170.0]
-#>     LPA   267.2 [110.0; 480.0]
-#>     SB    353.9 [320.0; 410.0]
-#>     SPT   693.6 [470.0; 800.0]
-#>   Gain from the reference day to the zone centre (95% CI):
-#>     zbmi: Mean difference -2.54 [-3.2; -1.88], p = 5.44e-13
+#> <optimal_comp> Goldilocks-zone search: zbmi
+#> 
+#> Search
+#>   Parts       MVPA, LPA, SB, SPT (total = 1440 min/day)
+#>   Region      per-part box of the mean +/- 3 SD
+#>   Grid        multiples of 10 min/day; 36,611 candidates
+#>   Scale       Mean difference versus the reference day
+#>   Zone rule   best 5% of predictions, lower is better
+#> 
+#> Region limits (min/day)
+#>           lower     upper
+#>   MVPA      0.1*    180.0
+#>   LPA      51.8*    503.3
+#>   SB      315.6*   1013.4
+#>   SPT     239.9*    809.4
+#>   * the part's observed minimum
+#> 
+#> Zone for zbmi: 1,831 compositions (centre [min; max])
+#>   MVPA   125.2  [ 30.0; 170.0]
+#>   LPA    267.2  [110.0; 480.0]
+#>   SB     353.9  [320.0; 410.0]
+#>   SPT    693.6  [470.0; 800.0]
+#> 
+#> Gain from the reference day to the zone centre (95% CI)
+#>   zbmi   Mean difference   -2.54  [-3.2; -1.88]  p = 5.44e-13
 
 # Two outcomes, their zones intersected
 risk <- comp_iv(cd, "obesity", model = "glm", family = "binomial")
@@ -517,88 +530,140 @@ optimal_composition(list(zbmi = quad, obesity = risk), direction = "min")
 #> ℹ The zone then marks where the region ends; see on_boundary.
 #> ℹ A curved surface can hold an interior optimum: refit with `curvature = TRUE`
 #>   (or `ilr()^2 + I(ilr()^2)` in a formula).
-#> <optimal_comp> Goldilocks-zone search over MVPA, LPA, SB, SPT (total = 1440 min/day)
-#>   Region: per-part box of the mean +/- 3 SD; candidates on multiples of 10 min/day
-#>   Limits: MVPA 0.1 to 180.0 min/day, LPA 51.8 to 503.3 min/day, SB 315.6 to 1013.4 min/day, SPT 239.9 to 809.4 min/day
-#>   4 of 8 box limits are the observed minimum or maximum of their part (lower: MVPA, LPA, SB, SPT)
-#>   Scale: Mean difference (zbmi), Odds ratio (obesity) versus the reference day
-#>   Zone rule: zbmi, the best 5% of predictions (lower is better); obesity, the best 5% of predictions (lower is better)
-#>   36,611 candidate compositions inside the region
-#>   Zone for zbmi: 1831 compositions (centre [min; max], min/day)
-#>     MVPA  125.2 [30.0; 170.0]
-#>     LPA   267.2 [110.0; 480.0]
-#>     SB    353.9 [320.0; 410.0]
-#>     SPT   693.6 [470.0; 800.0]
-#>   Zone for obesity: 1831 compositions (centre [min; max], min/day)
-#>     MVPA  151.2 [90.0; 170.0]
-#>     LPA   262.2 [60.0; 500.0]
-#>     SB    367.9 [320.0; 450.0]
-#>     SPT   658.7 [400.0; 800.0]
-#>     A fit linear in the composition has no interior optimum: the zone is the edge of the region in the direction of benefit.
-#>     Refit with `curvature = TRUE` for a surface that can hold one.
-#>   Overall zone: 1278 compositions (centre [min; max], min/day)
-#>     MVPA  146.0 [90.0; 170.0]
-#>     LPA   261.9 [110.0; 480.0]
-#>     SB    353.9 [320.0; 410.0]
-#>     SPT   678.2 [470.0; 800.0]
-#>     A fit linear in the composition has no interior optimum: the zone is the edge of the region in the direction of benefit.
-#>     Refit with `curvature = TRUE` for a surface that can hold one.
-#>   Gain from the reference day to the zone centre (95% CI):
-#>     zbmi: Mean difference -2.6 [-3.27; -1.93], p = 3.32e-13
-#>     obesity: Odds ratio 0.182 [0.079; 0.42], p = 6.45e-05
+#> <optimal_comp> Goldilocks-zone search: zbmi, obesity
+#> 
+#> Search
+#>   Parts       MVPA, LPA, SB, SPT (total = 1440 min/day)
+#>   Region      per-part box of the mean +/- 3 SD
+#>   Grid        multiples of 10 min/day; 36,611 candidates
+#>   Scale       Mean difference (zbmi), Odds ratio (obesity), versus the reference
+#>               day
+#>   Zone rule   best 5% of predictions, lower is better
+#> 
+#> Region limits (min/day)
+#>           lower     upper
+#>   MVPA      0.1*    180.0
+#>   LPA      51.8*    503.3
+#>   SB      315.6*   1013.4
+#>   SPT     239.9*    809.4
+#>   * the part's observed minimum
+#> 
+#> Zone for zbmi: 1,831 compositions (centre [min; max])
+#>   MVPA   125.2  [ 30.0; 170.0]
+#>   LPA    267.2  [110.0; 480.0]
+#>   SB     353.9  [320.0; 410.0]
+#>   SPT    693.6  [470.0; 800.0]
+#> 
+#> Zone for obesity: 1,831 compositions (centre [min; max])
+#>   MVPA   151.2  [ 90.0; 170.0]
+#>   LPA    262.2  [ 60.0; 500.0]
+#>   SB     367.9  [320.0; 450.0]
+#>   SPT    658.7  [400.0; 800.0]
+#>   A fit linear in the composition has no interior optimum: the zone is the edge
+#>   of the region in the direction of benefit.
+#>   Refit with `curvature = TRUE` for a surface that can hold one.
+#> 
+#> Overall zone: 1,278 compositions (centre [min; max])
+#>   MVPA   146.0  [ 90.0; 170.0]
+#>   LPA    261.9  [110.0; 480.0]
+#>   SB     353.9  [320.0; 410.0]
+#>   SPT    678.2  [470.0; 800.0]
+#>   A fit linear in the composition has no interior optimum: the zone is the edge
+#>   of the region in the direction of benefit.
+#>   Refit with `curvature = TRUE` for a surface that can hold one.
+#> 
+#> Gain from the reference day to the zone centre (95% CI)
+#>   zbmi      Mean difference    -2.6  [-3.27; -1.93]  p = 3.32e-13
+#>   obesity   Odds ratio        0.182  [0.079; 0.42]   p = 6.45e-05
 
 # The chi-square ellipsoid at the 80% level
 optimal_composition(quad, direction = "min", region = "ellipsoid")
-#> <optimal_comp> Goldilocks-zone search over MVPA, LPA, SB, SPT (total = 1440 min/day)
-#>   Region: ILR ellipsoid at the 80% chi-square level, holding 82.7% of the sample; candidates on multiples of 10 min/day
-#>   Candidates span: MVPA 10.0 to 300.0 min/day, LPA 100.0 to 500.0 min/day, SB 430.0 to 930.0 min/day, SPT 290.0 to 750.0 min/day
-#>   Scale: Mean difference versus the reference day
-#>   Zone rule: zbmi, the best 5% of predictions (lower is better)
-#>   18,814 candidate compositions inside the region
-#>   Zone for zbmi: 941 compositions (centre [min; max], min/day)
-#>     MVPA  207.3 [90.0; 300.0]
-#>     LPA   225.6 [160.0; 320.0]
-#>     SB    486.4 [430.0; 550.0]
-#>     SPT   520.7 [390.0; 680.0]
-#>     63% of the zone lies near the edge of the region (its outer shell); the best composition may lie beyond it.
-#>   Gain from the reference day to the zone centre (95% CI):
-#>     zbmi: Mean difference -1.89 [-2.27; -1.5], p = <2e-16
+#> <optimal_comp> Goldilocks-zone search: zbmi
+#> 
+#> Search
+#>   Parts       MVPA, LPA, SB, SPT (total = 1440 min/day)
+#>   Region      ILR ellipsoid at the 80% chi-square level, holding 82.7% of the
+#>               sample
+#>   Grid        multiples of 10 min/day; 18,814 candidates
+#>   Scale       Mean difference versus the reference day
+#>   Zone rule   best 5% of predictions, lower is better
+#> 
+#> Candidate range (min/day)
+#>          lower   upper
+#>   MVPA    10.0   300.0
+#>   LPA    100.0   500.0
+#>   SB     430.0   930.0
+#>   SPT    290.0   750.0
+#> 
+#> Zone for zbmi: 941 compositions (centre [min; max])
+#>   MVPA   207.3  [ 90.0; 300.0]
+#>   LPA    225.6  [160.0; 320.0]
+#>   SB     486.4  [430.0; 550.0]
+#>   SPT    520.7  [390.0; 680.0]
+#>   63% of the zone lies near the edge of the region (its outer shell); the best
+#>   composition may lie beyond it.
+#> 
+#> Gain from the reference day to the zone centre (95% CI)
+#>   zbmi   Mean difference   -1.89  [-2.27; -1.5]  p < 2e-16
 
 # A box from the 1st to the 99th percentile of each part, on a 20-minute grid
 optimal_composition(quad, direction = "min", coverage = c(0.01, 0.99),
                     spacing = 20)
-#> <optimal_comp> Goldilocks-zone search over MVPA, LPA, SB, SPT (total = 1440 min/day)
-#>   Region: per-part box from the 1st to the 99th percentile; candidates on multiples of 20 min/day
-#>   Limits: MVPA 1.2 to 199.0 min/day, LPA 68.0 to 422.0 min/day, SB 390.9 to 925.0 min/day, SPT 255.4 to 739.9 min/day
-#>   Scale: Mean difference versus the reference day
-#>   Zone rule: zbmi, the best 5% of predictions (lower is better)
-#>   3,243 candidate compositions inside the region
-#>   Zone for zbmi: 163 compositions (centre [min; max], min/day)
-#>     MVPA  145.7 [60.0; 180.0]
-#>     LPA   247.6 [120.0; 420.0]
-#>     SB    424.4 [400.0; 460.0]
-#>     SPT   622.3 [440.0; 720.0]
-#>     63% of the zone lies near the edge of the region (its outer shell); the best composition may lie beyond it.
-#>   Gain from the reference day to the zone centre (95% CI):
-#>     zbmi: Mean difference -2.08 [-2.53; -1.63], p = <2e-16
+#> <optimal_comp> Goldilocks-zone search: zbmi
+#> 
+#> Search
+#>   Parts       MVPA, LPA, SB, SPT (total = 1440 min/day)
+#>   Region      per-part box from the 1st to the 99th percentile
+#>   Grid        multiples of 20 min/day; 3,243 candidates
+#>   Scale       Mean difference versus the reference day
+#>   Zone rule   best 5% of predictions, lower is better
+#> 
+#> Region limits (min/day)
+#>          lower   upper
+#>   MVPA     1.2   199.0
+#>   LPA     68.0   422.0
+#>   SB     390.9   925.0
+#>   SPT    255.4   739.9
+#> 
+#> Zone for zbmi: 163 compositions (centre [min; max])
+#>   MVPA   145.7  [ 60.0; 180.0]
+#>   LPA    247.6  [120.0; 420.0]
+#>   SB     424.4  [400.0; 460.0]
+#>   SPT    622.3  [440.0; 720.0]
+#>   63% of the zone lies near the edge of the region (its outer shell); the best
+#>   composition may lie beyond it.
+#> 
+#> Gain from the reference day to the zone centre (95% CI)
+#>   zbmi   Mean difference   -2.08  [-2.53; -1.63]  p < 2e-16
 
 # A Cox fit, searched for the lowest hazard ratio versus the reference day
 cox <- comp_iv(cd, formula = survival::Surv(time, event) ~ ilr()^2 +
                  I(ilr()^2) + sex, model = "cox")
 optimal_composition(list(onset = cox), direction = "min")
-#> <optimal_comp> Goldilocks-zone search over MVPA, LPA, SB, SPT (total = 1440 min/day)
-#>   Region: per-part box of the mean +/- 3 SD; candidates on multiples of 10 min/day
-#>   Limits: MVPA 0.1 to 180.0 min/day, LPA 51.8 to 503.3 min/day, SB 315.6 to 1013.4 min/day, SPT 239.9 to 809.4 min/day
-#>   4 of 8 box limits are the observed minimum or maximum of their part (lower: MVPA, LPA, SB, SPT)
-#>   Scale: Hazard ratio versus the reference day
-#>   Zone rule: onset, the best 5% of predictions (lower is better)
-#>   36,611 candidate compositions inside the region
-#>   Zone for onset: 1831 compositions (centre [min; max], min/day)
-#>     MVPA  151.4 [80.0; 170.0]
-#>     LPA   339.9 [90.0; 500.0]
-#>     SB    375.7 [320.0; 570.0]
-#>     SPT   573.0 [240.0; 800.0]
-#>   Gain from the reference day to the zone centre (95% CI):
-#>     onset: Hazard ratio 0.205 [0.0876; 0.48], p = 0.000259
+#> <optimal_comp> Goldilocks-zone search: onset
+#> 
+#> Search
+#>   Parts       MVPA, LPA, SB, SPT (total = 1440 min/day)
+#>   Region      per-part box of the mean +/- 3 SD
+#>   Grid        multiples of 10 min/day; 36,611 candidates
+#>   Scale       Hazard ratio versus the reference day
+#>   Zone rule   best 5% of predictions, lower is better
+#> 
+#> Region limits (min/day)
+#>           lower     upper
+#>   MVPA      0.1*    180.0
+#>   LPA      51.8*    503.3
+#>   SB      315.6*   1013.4
+#>   SPT     239.9*    809.4
+#>   * the part's observed minimum
+#> 
+#> Zone for onset: 1,831 compositions (centre [min; max])
+#>   MVPA   151.4  [ 80.0; 170.0]
+#>   LPA    339.9  [ 90.0; 500.0]
+#>   SB     375.7  [320.0; 570.0]
+#>   SPT    573.0  [240.0; 800.0]
+#> 
+#> Gain from the reference day to the zone centre (95% CI)
+#>   onset   Hazard ratio   0.205  [0.0876; 0.48]  p = 0.000259
 # }
 ```
